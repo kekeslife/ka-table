@@ -1,0 +1,31 @@
+{
+  "name": "ka-table",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc && vite build",
+    "preview": "vite preview",
+    "package": "vite build"
+  },
+  "dependencies": {
+    "lodash-es": "^4.17.21",
+    "vue": "^3.4.15"
+  },
+  "devDependencies": {
+    "@types/lodash-es": "^4.17.12",
+    "@types/node": "^20.12.3",
+    "@types/qs": "^6.9.11",
+    "@vitejs/plugin-vue": "^4.5.2",
+    "@vitejs/plugin-vue-jsx": "^3.1.0",
+    "ant-design-vue": "^4.1.2",
+    "axios": "^1.6.7",
+    "dayjs": "^1.11.10",
+    "qs": "^6.11.1",
+    "rollup-plugin-visualizer": "^5.12.0",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.8",
+    "vue-tsc": "^1.8.25"
+  }
+}
