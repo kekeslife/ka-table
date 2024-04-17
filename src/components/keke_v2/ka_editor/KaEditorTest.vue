@@ -4,15 +4,17 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { KaEditorItem } from '.';
+import { onMounted, reactive, ref } from 'vue';
+import { KaEditorItem, KaEditorItemOption } from '.';
 import KaEditor from './KaEditor.vue';
 
 const $editor = ref<InstanceType<typeof KaEditor>>();
 
 const editorVals = ref({});
 
-const itemsObj = {
+const options = ref<KaEditorItemOption[]>([]);
+
+const itemsObj = reactive({
 	code: {
 		key: 'code',
 		index: 1.01,
@@ -82,18 +84,9 @@ const itemsObj = {
 		attrs: {
 			// mode:'combobox',
 			showSearch: true,
-			options: [
-				{ label: '开立', value: '0' },
-				{ label: '流程中', value: '1' },
-				{ label: '结案', value: '2' },
-				{ label: '作废', value: '3' },
-			],
+			options: options.value,
 		},
-		options: async () => [
-			{ label: '开立', value: '0' },
-			{ label: '流程中', value: '1' },
-			{ label: '结案', value: '2' },
-		],
+		options: options.value,
 		onAfterChange: async (value: any, option?: any) => {
 			// data.code = 'xxx';
 			// $table.value!.validateFields([['code']]);
@@ -119,10 +112,19 @@ const itemsObj = {
 			showTime: { format: 'HH:mm' },
 		},
 	},
-} as { [key: string]: KaEditorItem };
+}) as { [key: string]: KaEditorItem };
 
 const onClick = () => {
 	console.log(editorVals.value);
+	options.value.push(
+		...[
+			{ label: '开立', value: '0' },
+			{ label: '流程中', value: '1' },
+			{ label: '结案', value: '2' },
+			{ label: '作废', value: '3' },
+		]
+	);
+	$editor.value!.reRender();
 };
 
 onMounted(() => {

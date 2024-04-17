@@ -73,7 +73,7 @@
 					];
 				}
 			"
-			:options="options"
+			v-bind="attrs"
 			style="width: 100%"
 		></ka-input>
 	</div>
@@ -130,12 +130,14 @@
 	<div>
 		<b>change value: {{ changeValue }}</b>
 	</div>
+	<button @click="test">test</button>
 </template>
 
 <script setup lang="ts">
-import { markRaw, ref } from 'vue';
+import { markRaw, reactive, ref } from 'vue';
 import KaInput from './KaInput.vue';
 import { Cascader } from 'ant-design-vue';
+import { KaEditorItemOption } from '../ka_editor';
 
 const value = ref();
 const dateValue = ref();
@@ -144,6 +146,13 @@ const multipleValue = ref([]);
 const changeValue = ref('');
 const options = ref([{ label: '1', value: '1' }]);
 const cascaderOptions = ref([{ label: '1', value: '1', children: [{ label: '1-1', value: '1-1' }] }]);
+const attrs = reactive({
+	options:[] as KaEditorItemOption
+});
+
+const test = ()=>{
+	attrs.options = [{ label: '1', value: '1' }];
+}
 </script>
 
 <style scoped></style>

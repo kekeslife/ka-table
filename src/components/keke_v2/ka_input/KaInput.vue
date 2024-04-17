@@ -5,7 +5,6 @@
 		v-bind="$attrs"
 		@change="onChange"
 		@search="onSearch"
-		:options="$attrs.options"
 		show-search
 		allow-clear
 	/>
