@@ -41,6 +41,19 @@ export const initPorps = (props: InstanceType<typeof KaTable>['$props']) => {
 		if (props.toolbar.hasSort == null) props.toolbar.hasSort = true;
 	}
 
+	
+	if(!props.initFilterConditions){
+		props.initFilterConditions = [];
+	}
+	
+	if(!props.frozenFilterConditions){
+		props.frozenFilterConditions = [];
+	}
+	
+	if(!props.initSorterConditions){
+		props.initSorterConditions = [];
+	}
+
 	for (const colName in props.columns) {
 		initCols(props.columns[colName], [colName]);
 	}
@@ -107,6 +120,15 @@ const initCol = (col: KaTableCol, path: string[]) => {
 	//         col.filterInfo.isFilter = true;
 	//     }
 	// }
+
+	// 编辑
+	if(col.editorInfo){
+		if(col.editorInfo.componentType === 'select'){
+			if(!col.editorInfo.options){
+				col.editorInfo.options = col.listInfo?.options as any;
+			}
+		}
+	}
 
 	// 导出
 	if (col.exportInfo == null) {
@@ -558,3 +580,13 @@ export const sortNullLast = (key?: string) => {
 			((a[key] == null) as any) - ((b[key] == null) as any) || +(a[key] > b[key]) || -(a[key] < b[key]);
 	else return (a: any, b: any) => ((a == null) as any) - ((b == null) as any) || +(a > b) || -(a < b);
 };
+
+export const qsStringify = (obj:{[key:string]:any})=>{
+	const par = new URLSearchParams();
+	for(const key in obj){
+		if(obj[key]!==null){
+			par.append(key,obj[key]);
+		}
+	}
+	return par;
+}

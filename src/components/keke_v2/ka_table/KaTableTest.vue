@@ -1,9 +1,15 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { onBeforeMount, onMounted, reactive, ref } from 'vue';
 import dayjs from 'dayjs';
 import { KaTableCols, KaTableDataSource, KaTablePropsToolbar } from '.';
 import KaTable from './KaTable.vue';
 import { KaSorterCondition } from '../ka_sorter';
+import zhCN from 'ant-design-vue/es/locale/zh_CN';
+import 'dayjs/locale/zh-cn';
+import { Locale } from 'ant-design-vue/es/locale';
+import { KaEditorItemOption } from '../ka_editor';
+
+const statusOptions = [] as KaEditorItemOption[];
 
 const columns = reactive<KaTableCols>({
 	code: {
@@ -106,12 +112,12 @@ const columns = reactive<KaTableCols>({
 			dataType: 'date',
 		},
 	},
-	tempNum:{
+	tempNum: {
 		title: '临时编号',
 		editorInfo: {
-		    index: 7,
-			isPost:false,
-		}
+			index: 7,
+			isPost: false,
+		},
 	},
 	docFlow: {
 		code: {
@@ -132,12 +138,7 @@ const columns = reactive<KaTableCols>({
 				index: 4,
 				width: '150px',
 				componentType: 'select',
-				options: async () => [
-					{ label: '开立', value: '0' },
-					{ label: '流程中', value: '1' },
-					{ label: '结案', value: '2' },
-					{ label: '作废', value: '3' },
-				],
+				options: statusOptions,
 				onAfterChange: async (value: any, option?: any) => {
 					// data.code = 'xxx';
 					// $table.value!.validateFields([['code']]);
@@ -181,12 +182,13 @@ const columns = reactive<KaTableCols>({
 const sorterConditions = ref<KaSorterCondition[]>([
 	{ key: 'code', order: 'ascend', index: 1 },
 	{ key: 'item', order: null, index: null },
-	{ key: 'docFlow.modifyDatetime', order: null, index: null },
+	// { key: 'docFlow.modifyDatetime', order: null, index: null },
 ]);
 
 const toolbar = ref<KaTablePropsToolbar | undefined>({
 	hasFilter: true,
 });
+const locale = ref<Locale>();
 
 const testInit = () => {
 	toolbar.value = {
@@ -195,11 +197,65 @@ const testInit = () => {
 	columns.code.listInfo!.title = '公文号码';
 	$table.value?.reinit();
 };
+const closeSorter = () => {
+	// columns.code.sortInfo = undefined;
+	// columns.item.sortInfo = undefined;
+	// columns.docFlow.modifyDatetime.sortInfo = undefined;
+	toolbar.value!.hasSort = false;
+	$table.value?.reinit();
+};
+const closeFilter = () => {
+	// columns.modifyDatetime.filterInfo.isFilter = false;
+	// columns.docFlow.code.filterInfo.isFilter = false;
+	// columns.docFlow.title.filterInfo.isFilter = false;
+	toolbar.value!.hasFilter = false;
+	$table.value?.reinit();
+};
+const closeAdd = () => {
+	toolbar.value!.hasAdd = false;
+	$table.value?.reinit();
+};
+const closeEditor = () => {
+	toolbar.value!.hasEdit = false;
+	$table.value?.reinit();
+};
+
+const closeImport = () => {
+	toolbar.value!.hasImport = false;
+	$table.value?.reinit();
+};
+
+const closeExport = () => {
+	toolbar.value!.hasExport = false;
+	$table.value?.reinit();
+};
+const changeAntCol = () => {
+	const antCols = $table.value?.getAntCols();
+	antCols!.find(c => c.key === 'code')!.title = 'xxx';
+};
+const changeLanguage = () => {
+	dayjs.locale('zh-cn');
+	locale.value = zhCN;
+};
 const toolbarEx = (dataSource: KaTableDataSource) => {
 	console.log(dataSource.activeIndex);
 };
 
 const $table = ref<InstanceType<typeof KaTable>>();
+
+onBeforeMount(() => {
+	console.log('onBeforeMount');
+	statusOptions.push(
+		...[
+			{ label: '开立', value: '0' },
+			{ label: '流程中', value: '1' },
+			{ label: '结案', value: '2' },
+			{ label: '作废', value: '3' },
+		]
+	);
+});
+
+onMounted(() => {});
 </script>
 
 <template>
@@ -211,6 +267,7 @@ const $table = ref<InstanceType<typeof KaTable>>();
 		:columns="columns"
 		:page-size="3"
 		:toolbar="toolbar"
+		:locale="locale"
 		url="/api"
 		:on-before-refresh="
 			async () => {
@@ -227,6 +284,8 @@ const $table = ref<InstanceType<typeof KaTable>>();
 		:on-before-add="
 			async () => {
 				console.log('onBeforeAdd');
+				const editor = $table!.getEditorObj();
+				editor.code.display='show';
 				return { isSuccess: true, message: 'confirm?' };
 			}
 		"
@@ -246,6 +305,9 @@ const $table = ref<InstanceType<typeof KaTable>>();
 		:on-before-edit="
 			async () => {
 				console.log('onBeforeEdit');
+				const editor = $table!.getEditorObj();
+				editor.code.display='readonly';
+				editor.item.display='readonly';
 				return { isSuccess: true, message: 'confirm?' };
 			}
 		"
@@ -273,6 +335,14 @@ const $table = ref<InstanceType<typeof KaTable>>();
 		</template>
 	</ka-table>
 	<a-button @click="testInit">testInit</a-button>
+	<a-button @click="closeSorter">closeSorter</a-button>
+	<a-button @click="closeFilter">closeFilter</a-button>
+	<a-button @click="closeAdd">closeAdd</a-button>
+	<a-button @click="closeEditor">closeEditor</a-button>
+	<a-button @click="closeImport">closeImport</a-button>
+	<a-button @click="closeExport">closeExport</a-button>
+	<a-button @click="changeAntCol">changeAntCol</a-button>
+	<a-button @click="changeLanguage">localeCN</a-button>
 </template>
 
 <style scoped></style>

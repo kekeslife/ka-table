@@ -5,6 +5,7 @@
 		v-bind="$attrs"
 		@change="onChange"
 		@search="onSearch"
+		:options="$attrs.options"
 		show-search
 		allow-clear
 	/>
@@ -58,7 +59,7 @@ const components = {
 };
 
 const onSearchDebounce = debounce((searchKey: string) => {
-	// console.log('onSearchDebounce');
+	console.log('onSearchDebounce');
 	if (!searchKey) return;
 	emit('search', searchKey);
 }, props.debounceDelay);

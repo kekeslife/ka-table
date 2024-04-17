@@ -6,6 +6,7 @@ import { KaEditorItem, KaEditorItemOption } from '../ka_editor';
 import { SelectProps, TableColumnProps } from 'ant-design-vue';
 import { KaSorterCondition } from '../ka_sorter';
 import { KaFilterCondition } from '../ka_filter';
+import { type Locale } from 'ant-design-vue/es/locale';
 
 /** 表格状态 */
 export type KaTableStatus = 'List' | 'Sort' | 'Filter' | 'Add' | 'Edit' | 'Remove' | 'Import' | 'Export' | null;
@@ -277,6 +278,7 @@ export type KaTableOptionItem = {
 
 export const kaTableProps = () => ({
 	//...tableProps(),
+	locale:{type :Object as PropType<Locale>},
 	/** 尺寸 */
 	size: { type: String as PropType<SizeType>, default: 'small' },
 	/** 字段配置 */

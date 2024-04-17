@@ -1,6 +1,7 @@
 <template>
 	<a-config-provider
 		:component-size="props.size"
+		:locale="props.locale"
 		:theme="
 			props.theme
 				? {
@@ -161,10 +162,27 @@
 				</a-space>
 			</template>
 			<a-spin :spinning="loading.draw">
-				<ka-sorter ref="$sorter" :col-obj="sorterObj" v-show="tableStatus === 'Sort'"></ka-sorter>
-				<ka-filter v-show="tableStatus === 'Filter'" :columns="filterCols" ref="$filter"></ka-filter>
-				<ka-editor ref="$form" v-show="['Add','Edit'].includes(tableStatus!)" :items-obj="editorObj"> </ka-editor>
+				<ka-sorter
+					v-if="props.toolbar.hasSort"
+					ref="$sorter"
+					:col-obj="sorterObj"
+					v-show="tableStatus === 'Sort'"
+				></ka-sorter>
+				<ka-filter
+					v-if="props.toolbar.hasFilter"
+					v-show="tableStatus === 'Filter'"
+					:columns="filterCols"
+					ref="$filter"
+				></ka-filter>
+				<ka-editor
+					v-if="props.toolbar.hasAdd || props.toolbar.hasEdit"
+					ref="$form"
+					v-show="['Add','Edit'].includes(tableStatus!)"
+					:items-obj="editorObj"
+				>
+				</ka-editor>
 				<a-table
+					v-if="props.toolbar.hasImport"
 					v-show="tableStatus === 'Import'"
 					bordered
 					:columns="importCols"
@@ -175,7 +193,7 @@
 				</a-table>
 			</a-spin>
 		</a-drawer>
-		<a ref="$export" style="display: none"></a>
+		<a v-if="props.toolbar.hasExport" ref="$export" style="display: none"></a>
 	</a-config-provider>
 </template>
 
@@ -218,13 +236,14 @@ import {
 	createAllCols,
 	createExportCols,
 	createImportCols,
+	qsStringify,
 } from './common';
 import { KaEditorItem, KaEditorItemOption } from '../ka_editor';
 import { KaSorterCondition } from '../ka_sorter';
 import KaSorter from '../ka_sorter/KaSorter.vue';
 import { SearchOutlined } from '@ant-design/icons-vue';
 import axios from 'axios';
-import qs from 'qs';
+// import qs from 'qs';
 import { NamePath, ValidateOptions } from 'ant-design-vue/es/form/interface';
 import { FileType } from 'ant-design-vue/es/upload/interface';
 
@@ -265,8 +284,12 @@ defineExpose({
 		$form.value?.validateFields(nameList, options),
 	scrollToField: (name: NamePath, options?: {} | undefined) => $form.value?.scrollToField(name, options),
 	getEditorObj: () => getEditorObj(),
+	getAntCols: () => getAntCols(),
 	reloadData: async () => await loadData(),
-	reinit: () => init(),
+	reinit: () => {
+		init();
+		$filter.value?.render(filterCols.value);
+	},
 });
 
 /** 加载状态 */
@@ -447,7 +470,7 @@ const formatItem = (text: any, antCol: KaTableListCol, _record: KaTableRowRecord
 		if (lodash.isArray(antCol.options)) {
 			return (antCol.options as KaEditorItemOption[]).find(o => o.value === text)?.label || text;
 		} else if (lodash.isFunction(antCol.options)) {
-			return antCol.options(text).find(o => o.value === text)?.label || text;
+			return (antCol.options as (key: string) => KaEditorItemOption[])(text).find(o => o.value === text)?.label || text;
 		}
 	}
 
@@ -457,10 +480,17 @@ const formatItem = (text: any, antCol: KaTableListCol, _record: KaTableRowRecord
 		return dayjs(text).format(col.dbInfo!.dateFormat);
 	}
 
-	if (col.editorInfo?.selectMode === 'multiple') {
-		return text.join(col.editorInfo!.selectSplit!);
+	const editCol = editorObj.value[antCol.key!];
+	if (editCol) {
+		if (editCol.selectSplit) {
+			return text.join(editCol.selectSplit);
+		}
 	}
+
 	return text;
+};
+const getAntCols = () => {
+	return antCols.value;
 };
 /** ant table触发表格查询 */
 const onAntTableChange: TableProps['onChange'] = async (page, filters, sorters, _extra) => {
@@ -522,7 +552,7 @@ const loadData = async () => {
 
 		const res = await axios.post<KaTableSearchResponse>(
 			props.url,
-			qs.stringify({
+			qsStringify({
 				actNo: 'search',
 				searchPar: JSON.stringify({
 					sortConditions: _sorterConditions,
@@ -548,16 +578,20 @@ const loadData = async () => {
 				}
 			}
 			// 格式化日期和多选
-			for (const antCol of antCols.value) {
-				const col = lodash.get(props.columns, antCol.key as string) as KaTableCol;
-
+			// for (const antCol of antCols.value) {
+			for (const key in allCols) {
+				// const col = lodash.get(props.columns, antCol.key as string) as KaTableCol;
+				const col = allCols[key];
 				if (col.dbInfo?.dataType === 'date') {
 					for (const record of data.records) {
 						lodash.update(record, col.key!, (v: string) => dayjs(v));
 					}
 				} else if (col.editorInfo?.selectMode === 'multiple') {
-					for (const record of data.records) {
-						lodash.update(record, col.key!, (v: string) => (v ? v.split(col.editorInfo!.selectSplit!) : v));
+					const editCol = editorObj.value[col.key!];
+					if (editCol) {
+						for (const record of data.records) {
+							lodash.update(record, col.key!, (v: string) => (v ? v.split(editCol.selectSplit!) : v));
+						}
 					}
 				}
 			}
@@ -654,8 +688,29 @@ const sortSubmit = async () => {
 };
 /** 设置排序值 */
 const setSorters = (conditions: KaSorterCondition[]) => {
-	setAntSorters(antCols.value, conditions);
-	sorterConditions = conditions;
+	const allConditions = [];
+	for (const key in sorterObj.value) {
+		const condition = conditions.find(item => item.key === key);
+		if (condition) {
+			allConditions.push({
+				key: key,
+				index: condition.index,
+				order: condition.order,
+			});
+		} else {
+			allConditions.push({
+				key: key,
+				order: null,
+				index: null,
+			});
+		}
+	}
+	if (props.toolbar.hasSort) {
+		setAntSorters(antCols.value, allConditions);
+	} else {
+		setAntSorters(antCols.value, []);
+	}
+	sorterConditions = allConditions;
 	isSorted.value = conditions.some(col => col.order);
 };
 //  #endregion 排序
@@ -755,8 +810,8 @@ const filterSubmit = async () => {
 const onAntFilterSearch = async (key: string, value: any) => {
 	const filterCol = filterCols.value.find(col => col.key === key);
 	if (filterCol) {
-		if (lodash.isFunction(filterCol.options)) {
-			filterCol.attrs!.options = await filterCol.options(value);
+		if (filterCol.options && lodash.isFunction(filterCol.options)) {
+			filterCol.attrs!.options = await (filterCol.options as (key: string) => Promise<KaEditorItemOption[]>)(value);
 		}
 	}
 };
@@ -883,14 +938,14 @@ const editSubmit = async () => {
 const insertData = async () => {
 	props.isDebug && console.log('insertData');
 
-	const record = JSON.stringify(getEditorValObj(true,true,true));
-	if(record==='{}'){
+	const record = JSON.stringify(getEditorValObj(false, true, true));
+	if (record === '{}') {
 		throw props.language.noChange;
 	}
 
 	const res = await axios.post<KaTableResponse>(
 		props.url,
-		qs.stringify({
+		qsStringify({
 			actNo: 'insert',
 			record: record,
 		})
@@ -903,14 +958,14 @@ const insertData = async () => {
 const updateData = async () => {
 	props.isDebug && console.log('updateData');
 
-	const newRecord = JSON.stringify(getEditorValObj(true,true,true));
-	if(newRecord==='{}'){
+	const newRecord = JSON.stringify(getEditorValObj(true, true, true));
+	if (newRecord === '{}') {
 		throw props.language.noChange;
 	}
 
 	const res = await axios.post<KaTableResponse>(
 		props.url,
-		qs.stringify({
+		qsStringify({
 			actNo: 'update',
 			newRecord,
 			oldRecord: JSON.stringify(getCurRecordJson()),
@@ -958,7 +1013,7 @@ const removeData = async () => {
 
 	const res = await axios.post<KaTableResponse>(
 		props.url,
-		qs.stringify({
+		qsStringify({
 			actNo: 'remove',
 			record: JSON.stringify(getCurRecordJson()),
 		})
@@ -995,7 +1050,7 @@ const exportData = async (isAll: boolean) => {
 
 	const res = await axios.post<KaTableResponse>(
 		props.url,
-		qs.stringify({
+		qsStringify({
 			actNo: 'export',
 			exportPar: JSON.stringify({
 				sortConditions: _sorterConditions,
@@ -1084,7 +1139,7 @@ const importData = async () => {
 
 	const res = await axios.post<KaTableResponse>(
 		props.url,
-		qs.stringify({
+		qsStringify({
 			actNo: 'import',
 			records: JSON.stringify(importRecords.value),
 		})
@@ -1097,6 +1152,7 @@ const importData = async () => {
 
 //  #region 初始化
 const init = () => {
+	props.isDebug && console.log('init');
 	initPorps(props);
 
 	const _editorObj = createEditorItemsObj(props.columns!);
@@ -1105,16 +1161,18 @@ const init = () => {
 	const _antCols = createAntCols(props.columns!);
 	exportCols = createExportCols(props.columns!);
 	importCols = createImportCols(props.columns!);
-	// console.log(importCols)
+	allCols = createAllCols(props.columns!);
+	// console.log(_filterCols);
 
 	// 标题上显示筛选图标
-	createAntFilters(_antCols, _filterCols);
+	if (props.toolbar.hasFilter) {
+		createAntFilters(_antCols, _filterCols);
+	}
 
 	editorObj.value = _editorObj;
 	filterCols.value = _filterCols;
 	sorterObj.value = _sorterObj;
 	antCols.value = _antCols;
-	allCols = createAllCols(props.columns!);
 
 	setSorters(props.initSorterConditions);
 	setFilters(props.initFilterConditions);
@@ -1144,12 +1202,12 @@ const eventHandle = async (event?: KaTableEventHandle, data?: any) => {
 	return true;
 };
 /** 将编辑值转换为object
- * 
+ *
  * @param isDiff 是否是差异比较
  * @param isJson 是否转换json格式
  * @param isPost 是否过滤post参数
  */
-const getEditorValObj = (isDiff: boolean = false, isJson: boolean = false, isPost:boolean = false) => {
+const getEditorValObj = (isDiff: boolean = false, isJson: boolean = false, isPost: boolean = false) => {
 	const obj = {};
 	const oldRecord = dataSource.curRecord;
 	try {
@@ -1168,7 +1226,7 @@ const getEditorValObj = (isDiff: boolean = false, isJson: boolean = false, isPos
 				}
 			}
 			if (newVal + '' !== oldVal + '') {
-				if(isPost && col.isPost){
+				if (isPost && col.isPost) {
 					lodash.set(obj, key, newVal);
 				}
 			}
@@ -1264,6 +1322,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+
 .ka-table :deep(.ant-table-title) {
 	padding: 0.4rem;
 	background-color: v-bind(titleColor);

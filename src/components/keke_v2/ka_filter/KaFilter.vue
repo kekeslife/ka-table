@@ -297,13 +297,17 @@ const createConditions = (items: KaFilterItem[]) => {
 	return conditions;
 };
 
-const render = () => {
+const render = (columns?:KaFilterCol[]) => {
 	// filterItems.value = [createEmptyItem()];
 	// props.items = [createEmptyItem()];
-	colOptions = props.columns.map(c => ({ label: c.title, value: c.key }));
+	if(columns){
+		colOptions = columns.map(c => ({ label: c.title, value: c.key }));
+	}else{
+		colOptions = props.columns.map(c => ({ label: c.title, value: c.key }));
+	}
 };
 
-defineExpose({ setConditions, getConditions });
+defineExpose({ setConditions, getConditions, render });
 
 onBeforeMount(() => {
 	render();
