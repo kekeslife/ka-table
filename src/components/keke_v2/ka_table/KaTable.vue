@@ -838,7 +838,7 @@ const setEditorItems = () => {
 	const curRecord = dataSource.curRecord;
 	for (const key in editorObj.value) {
 		const val = lodash.cloneDeep(lodash.get(curRecord, key));
-		$form.value?.setEditorVal(key, val, true, true);
+		$form.value?.setEditorVal(key, val, false, true);
 	}
 };
 const onToolbarEdit = async () => {
@@ -890,7 +890,13 @@ const addSubmit = async () => {
 	props.isDebug && console.groupCollapsed('addSubmit');
 	loading.draw = true;
 	try {
-		await $form.value?.validate();
+		await $form.value?.validate().catch((e:any)=>{
+			if(e.errorFields){
+				if(e.errorFields.length){
+					throw e.errorFields[0].errors[0];
+				}
+			}
+		});
 		editorVals = $form.value?.getEditorVal();
 
 		if (!(await eventHandle(props.onPreAdd))) return;

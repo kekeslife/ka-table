@@ -97,8 +97,8 @@ const getEditorVal = (key?: string) => {
 const setEditorVal = async (key: string, val: any, trigChange: boolean = true, trigSearch: boolean = false) => {
 	if (key) {
 		editorVals.value[key] = val;
-		trigChange && (await onValChange(val, props.itemsObj[key]));
 		trigSearch && (await onSearch(val, props.itemsObj[key]));
+		trigChange && (await onValChange(val, props.itemsObj[key]));
 		try {
 			await $form.value.validateFields(key);
 		} catch {}
@@ -146,9 +146,12 @@ onBeforeMount(() => {
 	flex-direction: row;
 	gap: 1rem;
 }
-.item-flex {
-	flex-grow: 1;
+.editor-row :deep(.ant-form-row){
+	display: block;
 }
+/* .item-flex {
+	flex-grow: 1;
+} */
 .hide {
 	display: none;
 }
