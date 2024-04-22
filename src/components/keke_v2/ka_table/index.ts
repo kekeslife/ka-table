@@ -45,14 +45,14 @@ export type KaTableLang = {
 	editSuccess: string;
 	removeSuccess: string;
 	importSuccess: string;
-	importNoFileError:string;
-	importFileError:string;
+	importNoFileError: string;
+	importFileError: string;
 	selectRow: string;
 	confirm: string;
 	reset: string;
 	cancel: string;
 	submit: string;
-	summaryTotal:string;
+	summaryTotal: string;
 };
 
 /** 字段 */
@@ -75,7 +75,7 @@ export type KaTableCol = {
 		index: number;
 		/** 值自动转换显示内容 */
 		// options?: KaTableOptionItem[] | ((record: KaTableRowRecord) => string);
-		options?: KaEditorItemOption[] | ((key: string) => KaEditorItemOption[]) ;
+		options?: KaEditorItemOption[] | ((key: string) => KaEditorItemOption[]);
 		/** 自定义显示内容函数 */
 		//onBeforeList?: ((dataSource: KaTableDataSource) => Promise<string>);
 		// ant
@@ -120,7 +120,7 @@ export type KaTableCol = {
 		/** 自定义excel公式 */
 		formula?: string;
 	};
-	importInfo?:{
+	importInfo?: {
 		index: number | null;
 		title?: string;
 	};
@@ -199,7 +199,7 @@ export type KaTablePage = {
 export type KaTableListCol = TableColumnProps & {
 	index: number;
 	/** 值自动转换显示内容 */
-	options?: KaEditorItemOption[] | ((key: string) => KaEditorItemOption[]) 
+	options?: KaEditorItemOption[] | ((key: string) => KaEditorItemOption[]);
 };
 /** 排序 */
 export type KaTableSortOrder = {
@@ -222,12 +222,12 @@ export type KaTableSearchPar = {
 
 /** post导出参数 */
 export type KaTableExportPar = KaTableSearchPar & {
-	cols: { key: string; title: string; formula?: string; dateFormat?: string;index:number }[];
+	cols: { key: string; title: string; formula?: string; dateFormat?: string; index: number }[];
 	fileName: string;
 };
 
 export type KaTableImportPar = {
-	cols: { key: string; title: string; }[];
+	cols: { key: string; title: string }[];
 	file: File;
 };
 
@@ -249,9 +249,14 @@ export type KaTableResponse = {
 	isSuccess: boolean;
 	message: string | null;
 };
-/** 服务器返回查询 */
-export type KaTableSearchResponse = KaTableResponse & {
+export type KaTableResponseRecord = KaTableResponse & {
+	record: any;
+};
+export type KaTableResponseRecords = KaTableResponse & {
 	records: any[];
+};
+/** 服务器返回查询 */
+export type KaTableSearchResponse = KaTableResponseRecords & {
 	total: number;
 	summary: number[] | null;
 };
@@ -264,6 +269,7 @@ export type KaTableImportFileResponse = KaTableResponse & {
 export type KaTableEventResult = {
 	isSuccess: boolean;
 	message?: string;
+	alertType?: 'alert' | 'confirm';
 };
 
 /** 事件 */
@@ -278,7 +284,7 @@ export type KaTableOptionItem = {
 
 export const kaTableProps = () => ({
 	//...tableProps(),
-	locale:{type :Object as PropType<Locale>},
+	locale: { type: Object as PropType<Locale> },
 	/** 尺寸 */
 	size: { type: String as PropType<SizeType>, default: 'small' },
 	/** 字段配置 */
@@ -342,14 +348,14 @@ export const kaTableProps = () => ({
 			removeSuccess: '删除成功',
 			importSuccess: '导入成功',
 			loadError: '读取数据失败',
-			importNoFileError:'没有文件',
-			importFileError:'导入文件失败',
+			importNoFileError: '没有文件',
+			importFileError: '导入文件失败',
 			selectRow: '请先选中一行',
 			confirm: '确定',
 			submit: '提交',
 			reset: '重置',
 			cancel: '取消',
-			summaryTotal:'共'
+			summaryTotal: '共',
 		}),
 	},
 	/** 内置工具栏启用 */
@@ -441,6 +447,14 @@ export const kaTableProps = () => ({
 	},
 	/** Insert之后 */
 	onPostAdd: {
+		type: Function as PropType<KaTableEventHandle>,
+	},
+	/** 提交Insert或Update之前 */
+	onPreAddOrEdit: {
+		type: Function as PropType<KaTableEventHandle>,
+	},
+	/** 提交Insert或Update之后 */
+	onPostAddOrEdit: {
 		type: Function as PropType<KaTableEventHandle>,
 	},
 	/** 提交Remove之前 */

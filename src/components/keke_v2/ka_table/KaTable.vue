@@ -218,6 +218,7 @@ import {
 	KaTableExportPar,
 	KaTableImportCol,
 	KaTableImportFileResponse,
+	KaTableResponseRecord,
 } from '.';
 import { Ref, onBeforeMount, onMounted, reactive, ref, watch } from 'vue';
 import { PaginationConfig } from 'ant-design-vue/es/pagination';
@@ -584,7 +585,7 @@ const loadData = async () => {
 				const col = allCols[key];
 				if (col.dbInfo?.dataType === 'date') {
 					for (const record of data.records) {
-						lodash.update(record, col.key!, (v: string) => dayjs(v));
+						lodash.update(record, col.key!, (v: string) => (v ? dayjs(v) : v));
 					}
 				} else if (col.editorInfo?.selectMode === 'multiple') {
 					const editCol = editorObj.value[col.key!];
@@ -890,20 +891,22 @@ const addSubmit = async () => {
 	props.isDebug && console.groupCollapsed('addSubmit');
 	loading.draw = true;
 	try {
-		await $form.value?.validate().catch((e:any)=>{
-			if(e.errorFields){
-				if(e.errorFields.length){
+		await $form.value?.validate().catch((e: any) => {
+			if (e.errorFields) {
+				if (e.errorFields.length) {
 					throw e.errorFields[0].errors[0];
 				}
 			}
 		});
 		editorVals = $form.value?.getEditorVal();
 
+		if (!(await eventHandle(props.onPreAddOrEdit))) return;
 		if (!(await eventHandle(props.onPreAdd))) return;
 
-		await insertData();
+		const newData = await insertData();
 
-		if (!(await eventHandle(props.onPostAdd))) return;
+		if (!(await eventHandle(props.onPostAddOrEdit,newData))) return;
+		if (!(await eventHandle(props.onPostAdd, newData))) return;
 
 		showAlert(props.language.addSuccess);
 		tableStatus.value = 'List';
@@ -920,14 +923,22 @@ const editSubmit = async () => {
 	props.isDebug && console.groupCollapsed('editSubmit');
 	loading.draw = true;
 	try {
-		await $form.value?.validate();
+		await $form.value?.validate().catch((e: any) => {
+			if (e.errorFields) {
+				if (e.errorFields.length) {
+					throw e.errorFields[0].errors[0];
+				}
+			}
+		});
 		editorVals = $form.value?.getEditorVal();
 
+		if (!(await eventHandle(props.onPreAddOrEdit))) return;
 		if (!(await eventHandle(props.onPreEdit))) return;
 
-		await updateData();
+		const newData = await updateData();
 
-		if (!(await eventHandle(props.onPostEdit))) return;
+		if (!(await eventHandle(props.onPostAddOrEdit,newData))) return;
+		if (!(await eventHandle(props.onPostEdit,newData))) return;
 
 		showAlert(props.language.editSuccess);
 		tableStatus.value = 'List';
@@ -949,7 +960,7 @@ const insertData = async () => {
 		throw props.language.noChange;
 	}
 
-	const res = await axios.post<KaTableResponse>(
+	const res = await axios.post<KaTableResponseRecord>(
 		props.url,
 		qsStringify({
 			actNo: 'insert',
@@ -959,6 +970,7 @@ const insertData = async () => {
 	if (!res.data.isSuccess) {
 		throw res.data.message || props.language.addError;
 	}
+	return res.data.record;
 };
 /** 更新数据 */
 const updateData = async () => {
@@ -969,7 +981,7 @@ const updateData = async () => {
 		throw props.language.noChange;
 	}
 
-	const res = await axios.post<KaTableResponse>(
+	const res = await axios.post<KaTableResponseRecord>(
 		props.url,
 		qsStringify({
 			actNo: 'update',
@@ -980,6 +992,7 @@ const updateData = async () => {
 	if (!res.data.isSuccess) {
 		throw res.data.message || props.language.editError;
 	}
+	return res.data.record;
 };
 const getEditorObj = () => {
 	return editorObj.value;
@@ -1197,9 +1210,17 @@ const eventHandle = async (event?: KaTableEventHandle, data?: any) => {
 		}
 
 		if (handleResult.message) {
-			const isConfirm = await new Promise<boolean>((resolve, _reject) => {
-				showConfirm(resolve, handleResult.message!);
-			});
+			let isConfirm = true;
+			if (handleResult.alertType === 'alert') {
+				await new Promise<boolean>((resolve, _reject) => {
+					showAlert(handleResult.message!, resolve);
+				});
+			} else {
+				isConfirm = await new Promise<boolean>((resolve, _reject) => {
+					showConfirm(resolve, handleResult.message!);
+				});
+			}
+
 			if (!isConfirm) {
 				return false;
 			}
@@ -1231,8 +1252,9 @@ const getEditorValObj = (isDiff: boolean = false, isJson: boolean = false, isPos
 					}
 				}
 			}
+			// console.log(newVal + '' , oldVal + '',isPost,col.isPost);
 			if (newVal + '' !== oldVal + '') {
-				if (isPost && col.isPost) {
+				if ((isPost && col.isPost) || !isPost) {
 					lodash.set(obj, key, newVal);
 				}
 			}
@@ -1262,8 +1284,8 @@ const getEditorValObj = (isDiff: boolean = false, isJson: boolean = false, isPos
 /** 转换当前记录为已序列化的对象 */
 const getCurRecordJson = () => {
 	try {
-		const result = {};
 		const curRecord = dataSource.curRecord;
+		const result = lodash.cloneDeep(curRecord)!;
 		for (const key in allCols) {
 			const col = allCols[key];
 			const editCol = editorObj.value[key];
@@ -1299,8 +1321,13 @@ const showError = (message: any) => {
 	Modal.error({ title: lodash.isString(message) ? message : message.message });
 };
 /** 提示框 */
-const showAlert = (message: any) => {
-	Modal.info({ title: lodash.isString(message) ? message : message.message });
+const showAlert = (message: any, resolve?: (value: boolean | PromiseLike<boolean>) => void) => {
+	Modal.info({
+		title: lodash.isString(message) ? message : message.message,
+		onOk() {
+			resolve && resolve(true);
+		},
+	});
 };
 /** 关闭抽屉 */
 const onDrawCancel = () => {
@@ -1328,7 +1355,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-
 .ka-table :deep(.ant-table-title) {
 	padding: 0.4rem;
 	background-color: v-bind(titleColor);

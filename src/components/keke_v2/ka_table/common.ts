@@ -502,7 +502,7 @@ export const createAntCols = (columns: KaTableCols): KaTableListCol[] => {
 					customHeaderCell: tableCol.listInfo.customHeaderCell,
 					customRender: tableCol.listInfo.customRender,
 					align: tableCol.listInfo.align || (tableCol.dbInfo?.dataType === 'number' ? 'right' : 'left'),
-					ellipsis: tableCol.listInfo.ellipsis || false,
+					ellipsis: tableCol.listInfo.ellipsis || true,
 					index: tableCol.listInfo.index,
 					options: tableCol.listInfo.options,
 				};
