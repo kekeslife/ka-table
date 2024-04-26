@@ -40,7 +40,10 @@
 					<PlusOutlined />
 				</a-button>
 			</a-tooltip>
-			<a-tooltip v-if="props.import.isShow !== false" :title="props.import.title">
+			<a-tooltip v-if="props.import.isShow !== false">
+				<template #title>
+					<a-typography-link @click="props.import.downloadTemplate">{{ props.import.title }}</a-typography-link>
+				</template>
 				<a-upload :file-list="fileList" :before-upload="beforeUpload" :show-upload-list="false" accept=".xlsx">
 					<a-button @click="props.import.onClick">
 						<UploadOutlined />

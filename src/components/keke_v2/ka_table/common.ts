@@ -41,16 +41,15 @@ export const initPorps = (props: InstanceType<typeof KaTable>['$props']) => {
 		if (props.toolbar.hasSort == null) props.toolbar.hasSort = true;
 	}
 
-	
-	if(!props.initFilterConditions){
+	if (!props.initFilterConditions) {
 		props.initFilterConditions = [];
 	}
-	
-	if(!props.frozenFilterConditions){
+
+	if (!props.frozenFilterConditions) {
 		props.frozenFilterConditions = [];
 	}
-	
-	if(!props.initSorterConditions){
+
+	if (!props.initSorterConditions) {
 		props.initSorterConditions = [];
 	}
 
@@ -106,11 +105,27 @@ const initCol = (col: KaTableCol, path: string[]) => {
 		}
 	}
 
+
+	// 编辑
+	if (col.editorInfo) {
+		if (col.editorInfo.componentType === 'select') {
+			if (!col.editorInfo.options) {
+				col.editorInfo.options = col.listInfo?.options as any;
+			}
+		}
+		if(col.editorInfo.isPost == null){
+			col.editorInfo.isPost = true;
+		}
+	}
+
 	// 筛选
 	if (!col.filterInfo) {
 		col.filterInfo = {
 			isFilter: col.editorInfo?.isPost === false ? false : true,
 		};
+	}
+	if (!col.filterInfo.width) {
+		col.filterInfo.width = col.editorInfo?.width || col.listInfo?.width || 100;
 	}
 	// if (props.initFilterConditions && props.initFilterConditions.length > 0) {
 	//     if (props.initFilterConditions.some(c => c.col === col.key)) {
@@ -120,15 +135,15 @@ const initCol = (col: KaTableCol, path: string[]) => {
 	//         col.filterInfo.isFilter = true;
 	//     }
 	// }
-
-	// 编辑
-	if(col.editorInfo){
-		if(col.editorInfo.componentType === 'select'){
-			if(!col.editorInfo.options){
-				col.editorInfo.options = col.listInfo?.options as any;
-			}
-		}
-	}
+	
+	// 排序
+	// if (!col.sortInfo) {
+	// 	if (col.editorInfo?.isPost) {
+	// 		col.sortInfo = {
+	// 			index: null,
+	// 		};
+	// 	}
+	// }
 
 	// 导出
 	if (col.exportInfo == null) {
@@ -267,6 +282,7 @@ export const createFilterCols = (columns: KaTableCols, editorObj: { [key: string
 					componentType: 'input',
 					valueConverter: tableCol.filterInfo.valueConverter,
 					debounceDelay: editor?.debounceDelay,
+					width: tableCol.filterInfo.width?.toString(),
 				};
 				filterCol.attrs = {};
 				if (!editor) {
@@ -296,7 +312,8 @@ export const createFilterCols = (columns: KaTableCols, editorObj: { [key: string
 				}
 				// 选择组件
 				else if (filterCol.componentType === 'select') {
-					filterCol.options = tableCol.filterInfo.options || editor?.options || tableCol.listInfo?.options as KaEditorItem['options'];
+					filterCol.options =
+						tableCol.filterInfo.options || editor?.options || (tableCol.listInfo?.options as KaEditorItem['options']);
 					filterCol.attrs['showSearch'] = true;
 					filterCol.attrs['mode'] = editor?.attrs?.mode || 'combobox';
 					if (lodash.isArray(filterCol.options)) {
@@ -581,12 +598,12 @@ export const sortNullLast = (key?: string) => {
 	else return (a: any, b: any) => ((a == null) as any) - ((b == null) as any) || +(a > b) || -(a < b);
 };
 
-export const qsStringify = (obj:{[key:string]:any})=>{
+export const qsStringify = (obj: { [key: string]: any }) => {
 	const par = new URLSearchParams();
-	for(const key in obj){
-		if(obj[key]!==null){
-			par.append(key,obj[key]);
+	for (const key in obj) {
+		if (obj[key] !== null) {
+			par.append(key, obj[key]);
 		}
 	}
 	return par;
-}
+};

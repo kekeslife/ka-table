@@ -17,6 +17,7 @@ export type KaTableToolbarItemExport = KaTableToolbarItem & {
 
 export type KaTableToolbarItemImport = KaTableToolbarItem & {
     beforeUpload?:(e:FileType)=>void;
+    downloadTemplate?:() => Promise<void>
 }
 
 export const kaTableToolbarProps = () => ({

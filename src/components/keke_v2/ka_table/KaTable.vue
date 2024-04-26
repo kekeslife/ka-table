@@ -31,6 +31,10 @@
 			<template v-for="(_v, k) in $slots" v-slot:[k] :key="k">
 				<slot :name="k"></slot>
 			</template>
+			<!-- 汇总栏 -->
+			<template #summary>
+				<slot name="summaryBar" :summary="dataSource.summary"></slot>
+			</template>
 			<!-- 自定义单元格 -->
 			<template #bodyCell="{ text, column, index, record }">
 				<slot name="bodyItem" :column="column" :index="index" :text="text" :record="record">
@@ -78,6 +82,7 @@
 								isShow: props.toolbar.hasImport,
 								title: props.language.toolbarImport,
 								beforeUpload: uploadFile,
+								downloadTemplate:downloadTemplate,
 							}"
 							:edit="{
 								isDisabled: dataSource.activeIndex == null,
@@ -101,7 +106,7 @@
 			<!-- 筛选框 -->
 			<template #customFilterDropdown="{ setSelectedKeys, selectedKeys, confirm, clearFilters, column }">
 				<div style="padding: 8px">
-					<a-space direction="vertical">
+					<a-space direction="vertical" style="width:100%">
 						<!-- <a-input
 							:value="selectedKeys[0]"
 							@change="(e: any) => { setSelectedKeys(e.target!.value ? [e.target.value] : []) }"
@@ -117,7 +122,7 @@
 							@search="val => onAntFilterSearch(column.key, val)"
 							:component-type="filterCols.find(l => l.key === column.key)?.componentType"
 							v-bind="filterCols.find(l => l.key === column.key)?.attrs"
-							style="width: 100%"
+							:style="{width:filterCols.find(l => l.key === column.key)?.width}"
 						>
 						</ka-input>
 						<a-flex justify="space-between" align="center">
@@ -261,37 +266,17 @@ dayjs.prototype.toJSON = function () {
 /** props */
 const props = defineProps(kaTableProps());
 
-/** 颜色 */
+/** 样式 */
 const { useToken } = theme;
 const { token } = useToken();
 const primaryColor = props.theme || token.value.colorPrimary;
 const activeRowColor = props.theme ? props.theme + '55' : token.value.colorPrimaryBg;
 const colsColor = props.theme ? props.theme + '33' : token.value.colorFillAlter;
 const titleColor = props.theme || token.value.colorFillAlter;
+const borderColor = props.theme || token.value.colorBorderSecondary;
+const borderRadius = token.value.borderRadiusLG + 'px';
+const tdPadding = token.value.paddingXS + 'px';
 
-/** expose */
-defineExpose({
-	reRenderEditor: () => {
-		$form.value?.reRender();
-	},
-	getEditorVal: (key?: string) => $form.value?.getEditorVal(key),
-	setEditorVal: (key: string, val: any, trigChange?: boolean, trigSearch?: boolean) =>
-		$form.value?.setEditorVal(key, val, trigChange, trigSearch),
-	resetFields: (name?: NamePath | undefined) => $form.value?.resetFields(name),
-	clearValidate: (name?: NamePath | undefined) => $form.value?.clearValidate(name),
-	validate: (nameList?: string | NamePath[] | undefined, options?: ValidateOptions | undefined) =>
-		$form.value?.validate(nameList, options),
-	validateFields: (nameList?: string | NamePath[] | undefined, options?: ValidateOptions | undefined) =>
-		$form.value?.validateFields(nameList, options),
-	scrollToField: (name: NamePath, options?: {} | undefined) => $form.value?.scrollToField(name, options),
-	getEditorObj: () => getEditorObj(),
-	getAntCols: () => getAntCols(),
-	reloadData: async () => await loadData(),
-	reinit: () => {
-		init();
-		$filter.value?.render(filterCols.value);
-	},
-});
 
 /** 加载状态 */
 const loading = reactive({
@@ -311,6 +296,7 @@ let allCols = {} as { [key: string]: KaTableCol };
 const dataSource: KaTableDataSource = reactive({
 	records: [],
 	activeIndex: null,
+	summary:null,
 	get curRecord() {
 		return this.activeIndex != null ? this.records[this.activeIndex!] : null;
 	},
@@ -322,7 +308,7 @@ const pagination: PaginationConfig = reactive({
 	pageSize: props.pageSize,
 	total: 0,
 	showSizeChanger: false,
-	showTotal: (total: number, range: number[]) => `${range[0]}-${range[1]} of ${total} items`,
+	showTotal: (total: number, range: number[]) => `${range[0]}-${range[1]} / ${total}`,
 });
 
 /** ant表格字段配置 */
@@ -424,6 +410,34 @@ watch(tableStatus, newValue => {
 		default:
 			isDrawOpen.value = false;
 			break;
+	}
+});
+
+
+/** expose */
+defineExpose({
+	reRenderEditor: () => {
+		$form.value?.reRender();
+	},
+	getEditorVal: (key?: string) => $form.value?.getEditorVal(key),
+	setEditorVal: (key: string, val: any, trigChange?: boolean, trigSearch?: boolean) =>
+		$form.value?.setEditorVal(key, val, trigChange, trigSearch),
+	resetFields: (name?: NamePath | undefined) => $form.value?.resetFields(name),
+	clearValidate: (name?: NamePath | undefined) => $form.value?.clearValidate(name),
+	validate: (nameList?: string | NamePath[] | undefined, options?: ValidateOptions | undefined) =>
+		$form.value?.validate(nameList, options),
+	validateFields: (nameList?: string | NamePath[] | undefined, options?: ValidateOptions | undefined) =>
+		$form.value?.validateFields(nameList, options),
+	scrollToField: (name: NamePath, options?: {} | undefined) => $form.value?.scrollToField(name, options),
+	getEditorObj: () => getEditorObj(),
+	getAntCols: () => getAntCols(),
+	reloadData: async () => await loadData(),
+	reinit: () => {
+		init();
+		$filter.value?.render(filterCols.value);
+	},
+	setFilters:(conditions: KaFilterCondition[])=>{
+		setFilters(conditions,false);
 	}
 });
 // #endregion watch
@@ -546,7 +560,7 @@ const loadData = async () => {
 	try {
 		loading.list = true;
 
-		const _sorterConditions = sorterConditions.filter(item => item.order != null);
+		const _sorterConditions = sorterConditions.filter(item => item.index != null).sort((a,b)=>a.index!-b.index!);
 
 		props.isDebug && console.log('sortConditions->', JSON.stringify(_sorterConditions));
 		props.isDebug && console.log('whereConditions->', JSON.stringify(filterConditions));
@@ -599,6 +613,7 @@ const loadData = async () => {
 		}
 
 		dataSource.records = data.records || [];
+		dataSource.summary = data.summary || [];
 		pagination.total = data.total || 0;
 		dataSource.activeIndex = null;
 
@@ -622,6 +637,7 @@ const convertAntSortToSorterConditions = (
 	antSorters: SorterResult | SorterResult[],
 	curConditions: KaSorterCondition[]
 ) => {
+	console.log('convertAntSortToSorterConditions');
 	if (curConditions == null) return [];
 
 	let maxIndex = curConditions.reduce((max, sorter) => (sorter.index! > max ? sorter.index! : max), 0);
@@ -635,7 +651,7 @@ const convertAntSortToSorterConditions = (
 		} else {
 			condition.order = sorter.order!;
 			if (condition.index == null) {
-				condition.index = maxIndex++;
+				condition.index = ++maxIndex;
 			}
 		}
 	}
@@ -1066,6 +1082,7 @@ const exportData = async (isAll: boolean) => {
 	await eventHandle(props.onPreExport);
 
 	const _sorterConditions = sorterConditions.filter(item => item.order != null);
+	const fileName = `${props.tableTitle}(${dayjs().format('YYYYMMDDHHmmss')})`;
 
 	const res = await axios.post<KaTableResponse>(
 		props.url,
@@ -1077,7 +1094,7 @@ const exportData = async (isAll: boolean) => {
 				pageNum: pagination.current,
 				pageSize: isAll ? 0 : pagination.pageSize,
 				cols: exportCols,
-				fileName: `${props.tableTitle}(${dayjs().format('YYYYMMDDHHmmss')})`,
+				fileName,
 			} as KaTableExportPar),
 		}),
 		{
@@ -1093,7 +1110,7 @@ const exportData = async (isAll: boolean) => {
 		type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 	});
 	$export.value.href = URL.createObjectURL(file);
-	$export.value.download = props.exportFileName ? props.exportFileName() : res.headers['file-name'];
+	$export.value.download = props.exportFileName ? props.exportFileName() : fileName;
 	//$export.setAttribute('download', `考勤-${dayjs().format('MMDDHHmmss')}.xlsx`);
 	$export.value.click();
 
@@ -1167,6 +1184,30 @@ const importData = async () => {
 		throw res.data.message || props.language.importError;
 	}
 };
+const downloadTemplate = async () => {
+	const res = await axios.post<KaTableResponse>(
+		props.url,
+		qsStringify({
+			actNo: 'download_template',
+			cols: JSON.stringify(importCols.map(c => ({ key: c.key, title: c.title }))),
+		}),
+		{
+			responseType: 'blob',
+		}
+	);
+
+	if (res.headers['content-type']?.toString().includes('application/json')) {
+		throw JSON.parse(await (res.data as any).text()).Message || props.language.templateError;
+	}
+
+	const file = new Blob([res.data as any], {
+		type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+	});
+	$export.value.href = URL.createObjectURL(file);
+	$export.value.download = 'template.xlsx';
+	//$export.setAttribute('download', `考勤-${dayjs().format('MMDDHHmmss')}.xlsx`);
+	$export.value.click();
+};
 //	#endregion 导入
 
 //  #region 初始化
@@ -1195,6 +1236,10 @@ const init = () => {
 
 	setSorters(props.initSorterConditions);
 	setFilters(props.initFilterConditions);
+
+	if(!importCols.length){
+		props.toolbar.hasImport = false;
+	}
 };
 //  #endregion 初始化
 
@@ -1374,6 +1419,19 @@ onMounted(async () => {
 
 .ka-table :deep(.ant-table-column-sort) {
 	background-color: #fff;
+}
+
+.ka-table :deep(.ant-table-summary){
+	background-color: v-bind(colsColor) !important;
+}
+
+.ka-table :deep(.ant-table-pagination){
+	margin: 0;
+	padding: v-bind(tdPadding);
+	border: 1px solid v-bind(borderColor);
+	border-top: 0;
+	border-radius:0 0 v-bind(borderRadius) v-bind(borderRadius);
+	background-color: v-bind(colsColor);
 }
 
 :global(.ka-table-drawer .edit-item-inline-block) {

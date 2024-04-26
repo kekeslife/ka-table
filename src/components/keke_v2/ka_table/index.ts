@@ -41,6 +41,7 @@ export type KaTableLang = {
 	editError: string;
 	removeError: string;
 	importError: string;
+	templateError: string;
 	addSuccess: string;
 	editSuccess: string;
 	removeSuccess: string;
@@ -109,6 +110,7 @@ export type KaTableCol = {
 	filterInfo?: {
 		isFilter: boolean;
 		options?: KaEditorItem['options'];
+		width?:ColumnType<any>['width'];
 		/** 自定义值转换 */
 		valueConverter?: KaEditorItem['valueConverter'];
 		/** 自定义attr */
@@ -185,6 +187,7 @@ export type KaTableDataSource = {
 	records: KaTableRowRecord[];
 	activeIndex: number | null;
 	readonly curRecord: KaTableRowRecord | null;
+	summary:{[key: string]: any} | null;
 };
 /** 数据行 */
 export type KaTableRowRecord = { [key: string]: any };
@@ -258,7 +261,7 @@ export type KaTableResponseRecords = KaTableResponse & {
 /** 服务器返回查询 */
 export type KaTableSearchResponse = KaTableResponseRecords & {
 	total: number;
-	summary: number[] | null;
+	summary?:{[key:string]:any};
 };
 /** 服务器返回导入 */
 export type KaTableImportFileResponse = KaTableResponse & {
@@ -350,6 +353,7 @@ export const kaTableProps = () => ({
 			loadError: '读取数据失败',
 			importNoFileError: '没有文件',
 			importFileError: '导入文件失败',
+			templateError: '下载模板失败',
 			selectRow: '请先选中一行',
 			confirm: '确定',
 			submit: '提交',

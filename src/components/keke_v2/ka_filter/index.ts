@@ -25,6 +25,7 @@ export type KaFilterCol = {
     debounceDelay?: KaEditorItem['debounceDelay'];
     attrs?: { [key: string]: any };
     valueConverter?: KaEditorItem['valueConverter'];
+    width?:KaEditorItem['width'];
     // selectSplit?: string;
 }
 
