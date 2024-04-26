@@ -308,6 +308,8 @@ export const kaTableProps = () => ({
 	isDebug: { type: Boolean, default: false },
 	/** 新增标题 */
 	addTitle: { type: String, default: '' },
+	/** 刷新标题 */
+	refreshTitle: { type: String, default: '' },
 	/** 抽屉窗口宽度 */
 	drawWidth: { type: [Number, String], default: 720 },
 	/** 抽屉提交按钮文字 */
@@ -318,8 +320,12 @@ export const kaTableProps = () => ({
 	sortTitle: { type: String, default: '' },
 	/** 筛选标题 */
 	filterTitle: { type: String, default: '' },
+	/** 删除标题 */
+	removeTitle: { type: String, default: '' },
 	/** 导入标题 */
 	importTitle: { type: String, default: '' },
+	/** 导出标题 */
+	exportTitle: { type: String, default: '' },
 	/** 导出文件名 */
 	exportFileName: { type: Function as PropType<() => string> },
 
@@ -389,19 +395,19 @@ export const kaTableProps = () => ({
 	onPostLoadData: {
 		type: Function as PropType<KaTableEventHandle>,
 	},
-	/** 点击查询按钮，显示查询框之前 */
+	/** 点击筛选按钮，显示筛选框之前 */
 	onBeforeFilter: {
 		type: Function as PropType<KaTableEventHandle>,
 	},
-	/** 点击查询按钮，显示查询框之后 */
+	/** 点击筛选按钮，显示筛选框之后 */
 	onAfterFilter: {
 		type: Function as PropType<KaTableEventHandle>,
 	},
-	/** 提交查询之前 */
+	/** 提交筛选之前 */
 	onPreFilter: {
 		type: Function as PropType<KaTableEventHandle>,
 	},
-	/** 查询之后 */
+	/** 提交筛选之后 */
 	onPostFilter: {
 		type: Function as PropType<KaTableEventHandle>,
 	},
@@ -417,7 +423,7 @@ export const kaTableProps = () => ({
 	onPreSort: {
 		type: Function as PropType<KaTableEventHandle>,
 	},
-	/** 排序之后 */
+	/** 提交排序之后 */
 	onPostSort: {
 		type: Function as PropType<KaTableEventHandle>,
 	},
@@ -433,7 +439,7 @@ export const kaTableProps = () => ({
 	onPreEdit: {
 		type: Function as PropType<KaTableEventHandle>,
 	},
-	/** Update之后 */
+	/** 提交Update之后 */
 	onPostEdit: {
 		type: Function as PropType<KaTableEventHandle>,
 	},
@@ -449,7 +455,7 @@ export const kaTableProps = () => ({
 	onPreAdd: {
 		type: Function as PropType<KaTableEventHandle>,
 	},
-	/** Insert之后 */
+	/** 提交Insert之后 */
 	onPostAdd: {
 		type: Function as PropType<KaTableEventHandle>,
 	},
@@ -465,7 +471,7 @@ export const kaTableProps = () => ({
 	onPreRemove: {
 		type: Function as PropType<KaTableEventHandle>,
 	},
-	/** Remove之后 */
+	/** 提交Remove之后 */
 	onPostRemove: {
 		type: Function as PropType<KaTableEventHandle>,
 	},
@@ -481,7 +487,7 @@ export const kaTableProps = () => ({
 	onPreExport: {
 		type: Function as PropType<KaTableEventHandle>,
 	},
-	/** Export之后 */
+	/** 提交Export之后 */
 	onPostExport: {
 		type: Function as PropType<KaTableEventHandle>,
 	},
@@ -493,11 +499,11 @@ export const kaTableProps = () => ({
 	onAfterImportFile: {
 		type: Function as PropType<KaTableEventHandle>,
 	},
-	/** 解析Excel文件之前 */
+	/** 提交解析Excel文件之前 */
 	onPreImportFile: {
 		type: Function as PropType<KaTableEventHandle>,
 	},
-	/** 解析Excel文件之后 */
+	/** 提交解析Excel文件之后 */
 	onPostImportFile: {
 		type: Function as PropType<KaTableEventHandle>,
 	},
@@ -505,7 +511,7 @@ export const kaTableProps = () => ({
 	onPreImport: {
 		type: Function as PropType<KaTableEventHandle>,
 	},
-	/** 导入数据之后 */
+	/** 提交导入数据之后 */
 	onPostImport: {
 		type: Function as PropType<KaTableEventHandle>,
 	},
@@ -519,6 +525,10 @@ export const kaTableProps = () => ({
 	},
 	/** 点击行之后 */
 	onAfterRowClick: {
+		type: Function as PropType<KaTableEventHandle>,
+	},
+	/** 双击行之后 */
+	onAfterRowDbClick: {
 		type: Function as PropType<KaTableEventHandle>,
 	},
 });

@@ -15,7 +15,7 @@
 			</a-tooltip>
 			<a-tooltip v-if="props.export.isShow !== false" :title="props.export.title">
 				<a-popconfirm
-					title="导出"
+					:title="props.export.title"
 					ok-text="所有"
 					cancel-text="本页"
 					:ok-button-props="confirmBtnProps"

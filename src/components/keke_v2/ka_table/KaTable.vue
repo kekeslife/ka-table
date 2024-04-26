@@ -52,18 +52,18 @@
 						<ka-toolbar
 							:refresh="{
 								isShow: props.toolbar.hasRefresh,
-								title: props.language.toolbarRefresh,
+								title: props.refreshTitle || props.language.toolbarRefresh,
 								onClick: onToolbarRefresh,
 							}"
 							:filter="{
 								isShow: props.toolbar.hasFilter,
-								title: props.language.toolbarFilter,
+								title: props.filterTitle || props.language.toolbarFilter,
 								isActive: isFiltered,
 								onClick: onToolbarFilter,
 							}"
 							:export="{
 								isShow: props.toolbar.hasExport,
-								title: props.language.toolbarExport,
+								title: props.exportTitle || props.language.toolbarExport,
 								onExportAll(_e) {
 									onToolbarExport(true);
 								},
@@ -74,25 +74,29 @@
 							:sort="{
 								isActive: isSorted,
 								isShow: props.toolbar.hasSort,
-								title: props.language.toolbarSort,
+								title: props.sortTitle || props.language.toolbarSort,
 								onClick: onToolbarSort,
 							}"
-							:add="{ isShow: props.toolbar.hasAdd, title: props.language.toolbarAdd, onClick: onToolbarAdd }"
+							:add="{
+								isShow: props.toolbar.hasAdd,
+								title: props.addTitle || props.language.toolbarAdd,
+								onClick: onToolbarAdd,
+							}"
 							:import="{
 								isShow: props.toolbar.hasImport,
-								title: props.language.toolbarImport,
+								title: props.importTitle || props.language.toolbarImport,
 								beforeUpload: uploadFile,
-								downloadTemplate:downloadTemplate,
+								downloadTemplate: downloadTemplate,
 							}"
 							:edit="{
 								isDisabled: dataSource.activeIndex == null,
 								isShow: props.toolbar.hasEdit,
-								title: props.language.toolbarEdit,
+								title: props.editTitle || props.language.toolbarEdit,
 								onClick: onToolbarEdit,
 							}"
 							:remove="{
 								isShow: props.toolbar.hasRemove,
-								title: props.language.toolbarRemove,
+								title: props.removeTitle || props.language.toolbarRemove,
 								isDisabled: dataSource.activeIndex == null,
 								onClick: onToolbarRemove,
 							}"
@@ -106,7 +110,7 @@
 			<!-- 筛选框 -->
 			<template #customFilterDropdown="{ setSelectedKeys, selectedKeys, confirm, clearFilters, column }">
 				<div style="padding: 8px">
-					<a-space direction="vertical" style="width:100%">
+					<a-space direction="vertical" style="width: 100%">
 						<!-- <a-input
 							:value="selectedKeys[0]"
 							@change="(e: any) => { setSelectedKeys(e.target!.value ? [e.target.value] : []) }"
@@ -122,7 +126,7 @@
 							@search="val => onAntFilterSearch(column.key, val)"
 							:component-type="filterCols.find(l => l.key === column.key)?.componentType"
 							v-bind="filterCols.find(l => l.key === column.key)?.attrs"
-							:style="{width:filterCols.find(l => l.key === column.key)?.width}"
+							:style="{ width: filterCols.find(l => l.key === column.key)?.width }"
 						>
 						</ka-input>
 						<a-flex justify="space-between" align="center">
@@ -277,7 +281,6 @@ const borderColor = props.theme || token.value.colorBorderSecondary;
 const borderRadius = token.value.borderRadiusLG + 'px';
 const tdPadding = token.value.paddingXS + 'px';
 
-
 /** 加载状态 */
 const loading = reactive({
 	list: false,
@@ -296,7 +299,7 @@ let allCols = {} as { [key: string]: KaTableCol };
 const dataSource: KaTableDataSource = reactive({
 	records: [],
 	activeIndex: null,
-	summary:null,
+	summary: null,
 	get curRecord() {
 		return this.activeIndex != null ? this.records[this.activeIndex!] : null;
 	},
@@ -413,7 +416,6 @@ watch(tableStatus, newValue => {
 	}
 });
 
-
 /** expose */
 defineExpose({
 	reRenderEditor: () => {
@@ -436,9 +438,12 @@ defineExpose({
 		init();
 		$filter.value?.render(filterCols.value);
 	},
-	setFilters:(conditions: KaFilterCondition[])=>{
-		setFilters(conditions,false);
-	}
+	setFilters: (conditions: KaFilterCondition[]) => {
+		setFilters(conditions, false);
+	},
+	setSorters: (conditions: KaSorterCondition[]) => {
+		setSorters(conditions);
+	},
 });
 // #endregion watch
 
@@ -450,8 +455,14 @@ defineExpose({
 /** ant table 自定义表格事件。单击行 */
 const rowEvent = (_preRecord: KaTableRowRecord, index: number | undefined) => {
 	return {
-		onclick: (_event: MouseEvent) => {
+		onclick: async (_event: MouseEvent) => {
 			dataSource.activeIndex = index!;
+			if (!(await eventHandle(props.onAfterRowClick))) return;
+			// console.log('customRow onClick', index);
+		},
+		onDblclick: async (_event: MouseEvent) => {
+			dataSource.activeIndex = index!;
+			if (!(await eventHandle(props.onAfterRowDbClick))) return;
 			// console.log('customRow onClick', index);
 		},
 	};
@@ -508,7 +519,7 @@ const getAntCols = () => {
 	return antCols.value;
 };
 /** ant table触发表格查询 */
-const onAntTableChange: TableProps['onChange'] = async (page, filters, sorters, _extra) => {
+const onAntTableChange: TableProps['onChange'] = async (page, filters, sorters, extra) => {
 	props.isDebug && console.groupCollapsed('onTableChange');
 	// console.log('filters', filters);
 	// console.log('sorters', sorters);
@@ -518,17 +529,29 @@ const onAntTableChange: TableProps['onChange'] = async (page, filters, sorters, 
 		// 分页
 		pagination.current = page.current;
 
+
 		// 排序
 		const _sortConditions = convertAntSortToSorterConditions(sorters, sorterConditions);
 		setSorters(_sortConditions);
 
 		//筛选
-		if (isAntFilter) {
+		// if (isAntFilter) {
+		if(extra.action==='filter'){
 			const _filterConditions = convertAntFilterToFilterConditions(filters);
 			setFilters(_filterConditions, true);
 		}
 
+		// 分页
+		if(extra.action==='paginate'){
+			if (!(await eventHandle(props.onPrePage))) return;
+		}
+
 		await loadData();
+
+		// 分页
+		if(extra.action==='paginate'){
+			if (!(await eventHandle(props.onPostPage))) return;
+		}
 	} catch (e: any) {
 		showError(e);
 	}
@@ -560,7 +583,7 @@ const loadData = async () => {
 	try {
 		loading.list = true;
 
-		const _sorterConditions = sorterConditions.filter(item => item.index != null).sort((a,b)=>a.index!-b.index!);
+		const _sorterConditions = sorterConditions.filter(item => item.index != null).sort((a, b) => a.index! - b.index!);
 
 		props.isDebug && console.log('sortConditions->', JSON.stringify(_sorterConditions));
 		props.isDebug && console.log('whereConditions->', JSON.stringify(filterConditions));
@@ -921,7 +944,7 @@ const addSubmit = async () => {
 
 		const newData = await insertData();
 
-		if (!(await eventHandle(props.onPostAddOrEdit,newData))) return;
+		if (!(await eventHandle(props.onPostAddOrEdit, newData))) return;
 		if (!(await eventHandle(props.onPostAdd, newData))) return;
 
 		showAlert(props.language.addSuccess);
@@ -953,8 +976,8 @@ const editSubmit = async () => {
 
 		const newData = await updateData();
 
-		if (!(await eventHandle(props.onPostAddOrEdit,newData))) return;
-		if (!(await eventHandle(props.onPostEdit,newData))) return;
+		if (!(await eventHandle(props.onPostAddOrEdit, newData))) return;
+		if (!(await eventHandle(props.onPostEdit, newData))) return;
 
 		showAlert(props.language.editSuccess);
 		tableStatus.value = 'List';
@@ -1237,7 +1260,7 @@ const init = () => {
 	setSorters(props.initSorterConditions);
 	setFilters(props.initFilterConditions);
 
-	if(!importCols.length){
+	if (!importCols.length) {
 		props.toolbar.hasImport = false;
 	}
 };
@@ -1421,16 +1444,16 @@ onMounted(async () => {
 	background-color: #fff;
 }
 
-.ka-table :deep(.ant-table-summary){
+.ka-table :deep(.ant-table-summary) {
 	background-color: v-bind(colsColor) !important;
 }
 
-.ka-table :deep(.ant-table-pagination){
+.ka-table :deep(.ant-table-pagination) {
 	margin: 0;
 	padding: v-bind(tdPadding);
 	border: 1px solid v-bind(borderColor);
 	border-top: 0;
-	border-radius:0 0 v-bind(borderRadius) v-bind(borderRadius);
+	border-radius: 0 0 v-bind(borderRadius) v-bind(borderRadius);
 	background-color: v-bind(colsColor);
 }
 
