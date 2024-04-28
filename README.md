@@ -1,4 +1,15 @@
-Ant design vue 中的table组件扩展，助力CRUD boy
+Ant design vue 中的table组件扩展。只需简单配置前后端，就可轻松增删改查，助力CRUD boy。
+
+![image](https://github.com/kekeslife/ka-table/assets/4279196/a1fc914c-87c2-488b-9fff-92516ac2184c)
+![image](https://github.com/kekeslife/ka-table/assets/4279196/7b1363b8-4932-47e9-b589-96710fbddfa4)
+
+✔ 增删改查
+✔ 灵活的排序和筛选
+✔ 导入，导出
+✔ 编辑项内置：文字，日期，选择器，文本域
+✔ 基于ant-design-vue，可自定义编辑项
+✔ 丰富的事件钩子
+✔ 包含.NET后台
 
 # 快速开始
 
