@@ -351,7 +351,7 @@ const isFiltered = ref(false);
 /** 目前自定义过滤条件 */
 let filterConditions = [] as KaFilterCondition[];
 /** 过滤是否来自ant table */
-let isAntFilter = false;
+// let isAntFilter = false;
 // #endregion 筛选
 
 //  #region 编辑
@@ -529,27 +529,26 @@ const onAntTableChange: TableProps['onChange'] = async (page, filters, sorters, 
 		// 分页
 		pagination.current = page.current;
 
-
 		// 排序
 		const _sortConditions = convertAntSortToSorterConditions(sorters, sorterConditions);
 		setSorters(_sortConditions);
 
 		//筛选
 		// if (isAntFilter) {
-		if(extra.action==='filter'){
+		if (extra.action === 'filter') {
 			const _filterConditions = convertAntFilterToFilterConditions(filters);
 			setFilters(_filterConditions, true);
 		}
 
 		// 分页
-		if(extra.action==='paginate'){
+		if (extra.action === 'paginate') {
 			if (!(await eventHandle(props.onPrePage))) return;
 		}
 
 		await loadData();
 
 		// 分页
-		if(extra.action==='paginate'){
+		if (extra.action === 'paginate') {
 			if (!(await eventHandle(props.onPostPage))) return;
 		}
 	} catch (e: any) {
@@ -745,6 +744,9 @@ const setSorters = (conditions: KaSorterCondition[]) => {
 			});
 		}
 	}
+
+	resetSorterIndex(allConditions);
+	
 	if (props.toolbar.hasSort) {
 		setAntSorters(antCols.value, allConditions);
 	} else {
@@ -769,7 +771,7 @@ const onAntFilterConfirm = (_setSelectedKeys: any, selectedKeys: any[], confirm:
 	// setSelectedKeys(['x123']);
 	// console.log(selectedKeys);
 
-	isAntFilter = true;
+	// isAntFilter = true;
 	column.filteredValue = selectedKeys;
 	confirm();
 
@@ -778,7 +780,7 @@ const onAntFilterConfirm = (_setSelectedKeys: any, selectedKeys: any[], confirm:
 };
 /** 重置筛选 */
 const onAntFilterReset = (clearFilters: Function, confirm: Function, column: ColumnType) => {
-	isAntFilter = true;
+	// isAntFilter = true;
 	clearFilters();
 	column.filteredValue = [];
 	confirm();
@@ -829,7 +831,7 @@ const onToolbarFilter = async () => {
 const filterSubmit = async () => {
 	props.isDebug && console.log('filterSubmit');
 	loading.draw = true;
-	isAntFilter = false;
+	// isAntFilter = false;
 
 	try {
 		if (!(await eventHandle(props.onPreFilter))) return;

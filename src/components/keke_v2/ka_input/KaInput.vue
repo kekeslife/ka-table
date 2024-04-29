@@ -1,13 +1,16 @@
 <template>
-	<component
-		v-model:value="value"
-		:is="props.customComponent || components[componentType]"
-		v-bind="$attrs"
-		@change="onChange"
-		@search="onSearch"
-		show-search
-		allow-clear
-	/>
+	<a-config-provider :theme="{ token: { colorTextDisabled: '#00000088' } }">
+		<component
+			v-model:value="value"
+			:is="props.customComponent || components[componentType]"
+			v-bind="$attrs"
+			@change="onChange"
+			@search="onSearch"
+			show-search
+			allow-clear
+			class="ka-input"
+		/>
+	</a-config-provider>
 </template>
 
 <script setup lang="ts">
