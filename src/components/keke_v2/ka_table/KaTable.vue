@@ -530,8 +530,10 @@ const onAntTableChange: TableProps['onChange'] = async (page, filters, sorters, 
 		pagination.current = page.current;
 
 		// 排序
-		const _sortConditions = convertAntSortToSorterConditions(sorters, sorterConditions);
-		setSorters(_sortConditions);
+		if(extra.action==='sort'){
+			const _sortConditions = convertAntSortToSorterConditions(sorters, sorterConditions);
+			setSorters(_sortConditions);
+		}
 
 		//筛选
 		// if (isAntFilter) {
