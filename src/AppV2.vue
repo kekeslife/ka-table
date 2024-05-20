@@ -14,6 +14,8 @@ import KaEditor from './components/keke_v2/ka_editor/KaEditorTest.vue';
 import KaFilter from './components/keke_v2/ka_filter/KaFilterTest.vue';
 import KaDragList from './components/keke_v2/ka_drag_list/KaDragListTest.vue';
 import KaTable from './components/keke_v2/ka_table/KaTableTest.vue';
+// import {KaEditorItemOption} from './components/keke_v2/index';
+// const s = {} as KaEditorItemOption;
 const cm = ref('table');
 const cmp: { [key: string]: any } = {
 	input: markRaw(KaInput),

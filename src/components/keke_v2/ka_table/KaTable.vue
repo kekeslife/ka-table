@@ -27,6 +27,7 @@
 			:data-source="dataSource.records"
 			:showSorterTooltip="false"
 			:columns="antCols"
+			:scroll="{x:'max-content'}"
 		>
 			<template v-for="(_v, k) in $slots" v-slot:[k] :key="k">
 				<slot :name="k"></slot>
@@ -229,7 +230,7 @@ import {
 	KaTableImportFileResponse,
 	KaTableResponseRecord,
 } from '.';
-import { Ref, onBeforeMount, onMounted, reactive, ref, watch } from 'vue';
+import { Ref, getCurrentInstance, onBeforeMount, onMounted, reactive, ref, watch } from 'vue';
 import { PaginationConfig } from 'ant-design-vue/es/pagination';
 import { ColumnType, FilterValue, SorterResult } from 'ant-design-vue/es/table/interface';
 import { KaFilterCol, KaFilterCondition } from '../ka_filter';
@@ -252,7 +253,7 @@ import { KaEditorItem, KaEditorItemOption } from '../ka_editor';
 import { KaSorterCondition } from '../ka_sorter';
 import KaSorter from '../ka_sorter/KaSorter.vue';
 import { SearchOutlined } from '@ant-design/icons-vue';
-import axios from 'axios';
+import axios, { AxiosInstance } from 'axios';
 // import qs from 'qs';
 import { NamePath, ValidateOptions } from 'ant-design-vue/es/form/interface';
 import { FileType } from 'ant-design-vue/es/upload/interface';
@@ -262,6 +263,12 @@ import { FileType } from 'ant-design-vue/es/upload/interface';
 dayjs.prototype.toJSON = function () {
 	return this.format();
 };
+
+let $axios:AxiosInstance = axios.create();
+const app = getCurrentInstance();
+if((app?.proxy as any).$axios){
+	$axios = (app?.proxy as any).$axios;
+}
 // #endregion 扩展
 
 // #region data
@@ -589,7 +596,7 @@ const loadData = async () => {
 		props.isDebug && console.log('sortConditions->', JSON.stringify(_sorterConditions));
 		props.isDebug && console.log('whereConditions->', JSON.stringify(filterConditions));
 
-		const res = await axios.post<KaTableSearchResponse>(
+		const res = await $axios.post<KaTableSearchResponse>(
 			props.url,
 			qsStringify({
 				actNo: 'search',
@@ -1003,7 +1010,7 @@ const insertData = async () => {
 		throw props.language.noChange;
 	}
 
-	const res = await axios.post<KaTableResponseRecord>(
+	const res = await $axios.post<KaTableResponseRecord>(
 		props.url,
 		qsStringify({
 			actNo: 'insert',
@@ -1024,7 +1031,7 @@ const updateData = async () => {
 		throw props.language.noChange;
 	}
 
-	const res = await axios.post<KaTableResponseRecord>(
+	const res = await $axios.post<KaTableResponseRecord>(
 		props.url,
 		qsStringify({
 			actNo: 'update',
@@ -1073,7 +1080,7 @@ const onToolbarRemove = async () => {
 const removeData = async () => {
 	props.isDebug && console.log('removeData');
 
-	const res = await axios.post<KaTableResponse>(
+	const res = await $axios.post<KaTableResponse>(
 		props.url,
 		qsStringify({
 			actNo: 'remove',
@@ -1111,7 +1118,7 @@ const exportData = async (isAll: boolean) => {
 	const _sorterConditions = sorterConditions.filter(item => item.order != null);
 	const fileName = `${props.tableTitle}(${dayjs().format('YYYYMMDDHHmmss')})`;
 
-	const res = await axios.post<KaTableResponse>(
+	const res = await $axios.post<KaTableResponse>(
 		props.url,
 		qsStringify({
 			actNo: 'export',
@@ -1160,7 +1167,7 @@ const uploadFile = async (file: FileType) => {
 		formData.append('cols', JSON.stringify(importCols.map(c => ({ key: c.key, title: c.title }))));
 		formData.append('actNo', 'import_file');
 
-		const res = await axios.post<KaTableImportFileResponse>(props.url, formData);
+		const res = await $axios.post<KaTableImportFileResponse>(props.url, formData);
 
 		const data = res.data;
 
@@ -1200,7 +1207,7 @@ const importSubmit = async () => {
 const importData = async () => {
 	props.isDebug && console.log('importData');
 
-	const res = await axios.post<KaTableResponse>(
+	const res = await $axios.post<KaTableResponse>(
 		props.url,
 		qsStringify({
 			actNo: 'import',
@@ -1212,7 +1219,7 @@ const importData = async () => {
 	}
 };
 const downloadTemplate = async () => {
-	const res = await axios.post<KaTableResponse>(
+	const res = await $axios.post<KaTableResponse>(
 		props.url,
 		qsStringify({
 			actNo: 'download_template',

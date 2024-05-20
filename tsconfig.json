@@ -13,6 +13,8 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "preserve",
+    // "declaration": true,
+    // "declarationDir": "dist",
 
     /* Linting */
     "strict": true,

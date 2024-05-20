@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "main": "src/components/keke_v2/index.ts",
+  "module": "src/components/keke_v2/index.ts",
+  "files":["src/components/keke_v2/*"],
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc && vite build",

@@ -329,9 +329,9 @@ export const kaTableProps = () => ({
 	/** 导出文件名 */
 	exportFileName: { type: Function as PropType<() => string> },
 
-	initFilterConditions: { type: Array as PropType<KaFilterCondition[]>, default: null },
-	frozenFilterConditions: { type: Array as PropType<KaFilterCondition[]>, default: null },
-	initSorterConditions: { type: Array as PropType<KaSorterCondition[]>, default: null },
+	initFilterConditions: { type: Array as PropType<KaFilterCondition[]>, default: [] },
+	frozenFilterConditions: { type: Array as PropType<KaFilterCondition[]>, default: [] },
+	initSorterConditions: { type: Array as PropType<KaSorterCondition[]>, default: [] },
 
 	/** 多国语言 */
 	language: {
@@ -378,8 +378,8 @@ export const kaTableProps = () => ({
 			hasAdd: true,
 			hasEdit: true,
 			hasRemove: true,
-			hasExport: true,
-			hasImport: true,
+			hasExport: false,
+			hasImport: false,
 		}),
 	},
 

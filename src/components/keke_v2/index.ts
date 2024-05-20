@@ -9,4 +9,10 @@ import KaTable from './ka_table/KaTable.vue'
 //     }
 // }
 
+
 export default KaTable
+export * from './ka_editor/index'
+export * from './ka_filter/index'
+export * from './ka_sorter/index'
+export * from './ka_table/index'
+export * from './ka_toolbar/index'
