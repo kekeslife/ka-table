@@ -451,6 +451,9 @@ defineExpose({
 	setSorters: (conditions: KaSorterCondition[]) => {
 		setSorters(conditions);
 	},
+	getData:()=>{
+		return dataSource;
+	}
 });
 // #endregion watch
 
@@ -1434,6 +1437,10 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.ka-table{
+	width:100%;
+}
+
 .ka-table :deep(.ant-table-title) {
 	padding: 0.4rem;
 	background-color: v-bind(titleColor);

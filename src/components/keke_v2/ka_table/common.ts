@@ -12,7 +12,7 @@ export const initPorps = (props: InstanceType<typeof KaTable>['$props']) => {
 		props.toolbar = {
 			hasAdd: true,
 			hasEdit: true,
-			hasExport: true,
+			hasExport: false,
 			hasFilter: true,
 			hasImport: false,
 			hasRefresh: true,
@@ -33,9 +33,9 @@ export const initPorps = (props: InstanceType<typeof KaTable>['$props']) => {
 	} else {
 		if (props.toolbar.hasAdd == null) props.toolbar.hasAdd = true;
 		if (props.toolbar.hasEdit == null) props.toolbar.hasEdit = true;
-		if (props.toolbar.hasExport == null) props.toolbar.hasExport = true;
+		if (props.toolbar.hasExport == null) props.toolbar.hasExport = false;
 		if (props.toolbar.hasFilter == null) props.toolbar.hasFilter = true;
-		if (props.toolbar.hasImport == null) props.toolbar.hasImport = true;
+		if (props.toolbar.hasImport == null) props.toolbar.hasImport = false;
 		if (props.toolbar.hasRefresh == null) props.toolbar.hasRefresh = true;
 		if (props.toolbar.hasRemove == null) props.toolbar.hasRemove = true;
 		if (props.toolbar.hasSort == null) props.toolbar.hasSort = true;
@@ -60,7 +60,8 @@ export const initPorps = (props: InstanceType<typeof KaTable>['$props']) => {
 
 /** 初始化col */
 const initCols = (colObj: KaTableCol | { [key: string]: KaTableCol }, path: string[]) => {
-	if (Object.hasOwn(colObj, 'title')) {
+	// if (Object.hasOwn(colObj, 'title')) {
+	if (colObj.hasOwnProperty('title')) {
 		if (lodash.isString(colObj.title)) {
 			initCol(colObj as KaTableCol, [...path]);
 			return;

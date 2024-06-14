@@ -266,7 +266,7 @@ onMounted(() => {});
 		size="small"
 		:columns="columns"
 		:page-size="3"
-		:toolbar="toolbar"
+		:toolbar="{ hasExport: false, hasRemove: false }"
 		:locale="locale"
 		url="/api"
 		:on-before-refresh="
@@ -333,6 +333,18 @@ onMounted(() => {});
 		<template #bodyItem="{ column, text }">
 			<span v-if="column.key === 'code'">[{{ text }}]</span>
 		</template>
+	</ka-table>
+	<ka-table
+		v-if="true"
+		table-title="title"
+		size="small"
+		:columns="columns"
+		:page-size="3"
+		:toolbar="{ hasExport: false, hasRemove: false }"
+		:locale="locale"
+		url="/api"
+		:is-debug="true"
+	>
 	</ka-table>
 	<a-button @click="testInit">testInit</a-button>
 	<a-button @click="closeSorter">closeSorter</a-button>

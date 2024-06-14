@@ -44,6 +44,7 @@
 					@search="(v:any)=>{onValSearch(item,v)}"
 					:options="item.valOptions"
 					class="flex-auto-width"
+					style="flex:1"
 				>
 				</ka-input>
 			</a-space-compact>
