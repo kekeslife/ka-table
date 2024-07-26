@@ -4,10 +4,19 @@ import KaTable from './KaTable.vue';
 import { KaEditorItem } from '../ka_editor';
 import { KaFilterCol } from '../ka_filter';
 import { KaSorterCondition } from '../ka_sorter';
+import {langCN,langEN} from '../lang';
 
 // #region init
 
 export const initPorps = (props: InstanceType<typeof KaTable>['$props']) => {
+	if(!props.language?.addError){
+		if(props.defaultLang === 'en'){
+			Object.assign(props.language! , langEN);
+		}else{
+			Object.assign(props.language! , langCN);
+		}
+	}
+
 	if (props.toolbar === undefined) {
 		props.toolbar = {
 			hasAdd: true,

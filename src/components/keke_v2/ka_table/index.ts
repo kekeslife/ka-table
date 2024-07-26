@@ -3,7 +3,7 @@ import { Rule } from 'ant-design-vue/es/form/interface';
 import { ColumnType, SortOrder } from 'ant-design-vue/es/table/interface';
 import { PropType } from 'vue';
 import { KaEditorItem, KaEditorItemOption } from '../ka_editor';
-import { SelectProps, TableColumnProps } from 'ant-design-vue';
+import { SelectProps, TableColumnProps,TableProps } from 'ant-design-vue';
 import { KaSorterCondition } from '../ka_sorter';
 import { KaFilterCondition } from '../ka_filter';
 import { type Locale } from 'ant-design-vue/es/locale';
@@ -50,6 +50,7 @@ export type KaTableLang = {
 	importFileError: string;
 	selectRow: string;
 	confirm: string;
+	clear: string;
 	reset: string;
 	cancel: string;
 	submit: string;
@@ -290,6 +291,8 @@ export const kaTableProps = () => ({
 	locale: { type: Object as PropType<Locale> },
 	/** 尺寸 */
 	size: { type: String as PropType<SizeType>, default: 'small' },
+	/** ant table scroll */
+	scroll: { type: Object as PropType<TableProps['scroll']> },
 	/** 字段配置 */
 	columns: { type: Object as PropType<KaTableCols>, required: true },
 	/** 表格标题 */
@@ -314,6 +317,8 @@ export const kaTableProps = () => ({
 	drawWidth: { type: [Number, String], default: 720 },
 	/** 抽屉提交按钮文字 */
 	drawSubmitTitle: { type: String, default: '' },
+	/** 抽屉清空按钮文字 */
+	drawClearTitle: { type: String, default: '' },
 	/** 修改标题 */
 	editTitle: { type: String, default: '' },
 	/** 排序标题 */
@@ -336,37 +341,12 @@ export const kaTableProps = () => ({
 	/** 多国语言 */
 	language: {
 		type: Object as PropType<KaTableLang>,
-		default: () => ({
-			toolbarRefresh: '刷新',
-			toolbarFilter: '筛选',
-			toolbarSort: '排序',
-			toolbarEdit: '编辑',
-			toolbarRemove: '删除',
-			toolbarAdd: '新增',
-			toolbarExport: '导出',
-			toolbarImport: '导入',
-			noChange: '没啥需要更新',
-			refreshError: '刷新失败',
-			exportError: '导出失败',
-			addError: '新增失败',
-			editError: '更新失败',
-			removeError: '删除失败',
-			importError: '导入失败',
-			addSuccess: '新增成功',
-			editSuccess: '修改成功',
-			removeSuccess: '删除成功',
-			importSuccess: '导入成功',
-			loadError: '读取数据失败',
-			importNoFileError: '没有文件',
-			importFileError: '导入文件失败',
-			templateError: '下载模板失败',
-			selectRow: '请先选中一行',
-			confirm: '确定',
-			submit: '提交',
-			reset: '重置',
-			cancel: '取消',
-			summaryTotal: '共',
-		}),
+		default: {},
+	},
+	/** 内置语言 */
+	defaultLang:{
+		type:String as PropType<'cn' | 'en'>,
+		default: 'cn',
 	},
 	/** 内置工具栏启用 */
 	toolbar: {

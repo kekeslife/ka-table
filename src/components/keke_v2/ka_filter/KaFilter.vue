@@ -65,7 +65,7 @@
 							<SisternodeOutlined class="katable-filter-action-grp" />
 						</a-menu-item>
 						<a-menu-divider />
-						<a-menu-item :disabled="i === 0 && items.length === 1" key="5" @click="deleteItem(i)">
+						<a-menu-item key="5" @click="deleteItem(i)">
 							<CloseOutlined />
 						</a-menu-item>
 					</a-menu>
@@ -123,7 +123,7 @@ const optOptions = [
 ];
 
 const onChangeCol = (item: KaFilterItem, _value: any) => {
-	console.log('onChangeCol');
+	// console.log('onChangeCol');
 	item.col = props.columns.find(col => col.key === item.key);
 	item.opt = undefined;
 	item.optOptions = getOptOptions(item);
@@ -134,7 +134,7 @@ const onChangeCol = (item: KaFilterItem, _value: any) => {
 };
 
 const onChangeOpt = (item: KaFilterItem, opt: KaFilterItem['opt']) => {
-	console.log('onChangeOpt');
+	// console.log('onChangeOpt');
 	if (!opt) return;
 	// const col = props.columns!.find(col => col.key === item.key);
 
@@ -192,7 +192,7 @@ const onChangeOpt = (item: KaFilterItem, opt: KaFilterItem['opt']) => {
 };
 
 const onValChange = (item: KaFilterItem, value: any) => {
-	console.log('onValChange', value);
+	// console.log('onValChange', value);
 	if (item.col?.valueConverter) {
 		item.val = value;
 	}
@@ -251,10 +251,13 @@ const addItemDownGroup = (index: number) => {
 };
 const deleteItem = (index: number) => {
 	items.value!.splice(index, 1);
+	if(items.value.length===0){
+		items.value.push(createEmptyItem());
+	}
 };
 /** 设置条件 */
 const setConditions = (conditions: KaFilterCondition[]) => {
-	console.log('setConditions');
+	// console.log('setConditions');
 	if (conditions!.length === 0) {
 		items.value = [createEmptyItem()];
 		return;
@@ -289,6 +292,7 @@ const getConditions = () => {
 const createConditions = (items: KaFilterItem[]) => {
 	const conditions: KaFilterCondition[] = [];
 	for (const item of items) {
+		if(!item.children && !item.key) continue;
 		const condition = lodash.cloneDeep(lodash.pick(item, ['key', 'opt', 'val', 'bool'])) as KaFilterCondition;
 		if (item.children) {
 			condition.children = createConditions(item.children);

@@ -27,7 +27,7 @@
 			:data-source="dataSource.records"
 			:showSorterTooltip="false"
 			:columns="antCols"
-			:scroll="{x:'max-content'}"
+			:scroll="props.scroll"
 		>
 			<template v-for="(_v, k) in $slots" v-slot:[k] :key="k">
 				<slot :name="k"></slot>
@@ -166,7 +166,10 @@
 		>
 			<template #extra>
 				<a-space>
-					<a-button type="primary" @click="onDrawSubmit" :loading="loading.draw" size="normal">
+					<a-button v-show="!!onDrawClear" @click="onDrawClear" :loading="loading.draw" size="normal">
+						{{ props.drawClearTitle || props.language.clear }}
+					</a-button>
+					<a-button type="primary" v-show="!!onDrawSubmit" @click="onDrawSubmit" :loading="loading.draw" size="normal">
 						{{ props.drawSubmitTitle || props.language.confirm }}
 					</a-button>
 				</a-space>
@@ -257,6 +260,7 @@ import axios, { AxiosInstance } from 'axios';
 // import qs from 'qs';
 import { NamePath, ValidateOptions } from 'ant-design-vue/es/form/interface';
 import { FileType } from 'ant-design-vue/es/upload/interface';
+import {langCN,langEN} from '../lang';
 
 // #region 扩展
 /** dayjs */
@@ -264,9 +268,9 @@ dayjs.prototype.toJSON = function () {
 	return this.format();
 };
 
-let $axios:AxiosInstance = axios.create();
+let $axios: AxiosInstance = axios.create();
 const app = getCurrentInstance();
-if((app?.proxy as any).$axios){
+if ((app?.proxy as any).$axios) {
 	$axios = (app?.proxy as any).$axios;
 }
 // #endregion 扩展
@@ -334,13 +338,14 @@ const isDrawOpen = ref(false);
 const drawWidth = ref(props.drawWidth || 720);
 /** 抽屉提交按钮 */
 const onDrawSubmit = ref<Function | null>(null);
+/** 抽屉清空按钮 */
+const onDrawClear = ref<Function | null>(null);
 // #endregion draw
 
 //  #region 排序
 /** 排序dom */
 const $sorter = ref<InstanceType<typeof KaSorter>>();
 /** 供排序组件使用 */
-// TODO:改名
 const sorterObj = ref<{ [key: string]: string }>({});
 /** 排序条件 */
 let sorterConditions = [] as KaSorterCondition[];
@@ -385,40 +390,57 @@ const importRecords = ref<any[]>([]);
 // 	#endregion 导入
 
 //  #region watch
+watch(
+	() => props.defaultLang,
+	newLang => {
+		if (newLang === 'en') {
+			Object.assign(props.language!, langEN);
+		} else if (newLang === 'cn'){
+			Object.assign(props.language!, langCN);
+		}
+	}
+);
 watch(tableStatus, newValue => {
 	switch (newValue) {
 		case 'Add':
 			drawTitle.value = props.addTitle || props.language.toolbarAdd;
 			resetDrawWidth();
 			onDrawSubmit.value = addSubmit;
+			onDrawClear.value = null;
 			isDrawOpen.value = true;
 			break;
 		case 'Edit':
 			drawTitle.value = props.editTitle || props.language.toolbarEdit;
 			resetDrawWidth();
 			onDrawSubmit.value = editSubmit;
+			onDrawClear.value = null;
 			isDrawOpen.value = true;
 			break;
 		case 'Sort':
 			drawTitle.value = props.sortTitle || props.language.toolbarSort;
 			resetDrawWidth();
 			onDrawSubmit.value = sortSubmit;
+			onDrawClear.value = null;
 			isDrawOpen.value = true;
 			break;
 		case 'Filter':
 			drawTitle.value = props.filterTitle || props.language.toolbarFilter;
 			resetDrawWidth();
 			onDrawSubmit.value = filterSubmit;
+			onDrawClear.value = filterClear;
 			isDrawOpen.value = true;
 			break;
 		case 'Import':
 			drawTitle.value = props.importTitle || props.language.toolbarImport;
 			resetDrawWidth();
 			onDrawSubmit.value = importSubmit;
+			onDrawClear.value = null;
 			isDrawOpen.value = true;
 			break;
 		default:
 			isDrawOpen.value = false;
+			onDrawSubmit.value = null;
+			onDrawClear.value = null;
 			break;
 	}
 });
@@ -451,9 +473,9 @@ defineExpose({
 	setSorters: (conditions: KaSorterCondition[]) => {
 		setSorters(conditions);
 	},
-	getData:()=>{
+	getData: () => {
 		return dataSource;
-	}
+	},
 });
 // #endregion watch
 
@@ -540,7 +562,7 @@ const onAntTableChange: TableProps['onChange'] = async (page, filters, sorters, 
 		pagination.current = page.current;
 
 		// 排序
-		if(extra.action==='sort'){
+		if (extra.action === 'sort') {
 			const _sortConditions = convertAntSortToSorterConditions(sorters, sorterConditions);
 			setSorters(_sortConditions);
 		}
@@ -758,7 +780,7 @@ const setSorters = (conditions: KaSorterCondition[]) => {
 	}
 
 	resetSorterIndex(allConditions);
-	
+
 	if (props.toolbar.hasSort) {
 		setAntSorters(antCols.value, allConditions);
 	} else {
@@ -859,6 +881,9 @@ const filterSubmit = async () => {
 	} finally {
 		loading.draw = false;
 	}
+};
+const filterClear = async () => {
+	$filter.value?.setConditions([]);
 };
 /** table表头上的筛选关键字查询 */
 const onAntFilterSearch = async (key: string, value: any) => {
@@ -1437,8 +1462,8 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.ka-table{
-	width:100%;
+.ka-table {
+	width: 100%;
 }
 
 .ka-table :deep(.ant-table-title) {

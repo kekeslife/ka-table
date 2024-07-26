@@ -247,6 +247,20 @@ setup(){
 }
 ```
 
+# 显示 - 固定列
+
+```html
+<ka-table :scroll="{x:'max-content'}"></ka-table>
+```
+
+```javascript
+listInfo: {
+	attrs:{fixed:'left'}
+},
+```
+
+
+
 
 
 # 导出 - 维护Excel

@@ -20,6 +20,7 @@ const columns = reactive<KaTableCols>({
 		listInfo: {
 			index: 0,
 			width: '100px',
+			attrs:{fixed:'left'}
 		},
 		sortInfo: {
 			index: 0,
@@ -151,6 +152,7 @@ const columns = reactive<KaTableCols>({
 			title: '标题',
 			listInfo: {
 				index: 1.1,
+				width:'150px'
 			},
 			editorInfo: {
 				index: 1.1,
@@ -189,6 +191,7 @@ const toolbar = ref<KaTablePropsToolbar | undefined>({
 	hasFilter: true,
 });
 const locale = ref<Locale>();
+const kaLang = ref<'cn'|'en'>('cn');
 
 const testInit = () => {
 	toolbar.value = {
@@ -236,6 +239,7 @@ const changeAntCol = () => {
 const changeLanguage = () => {
 	dayjs.locale('zh-cn');
 	locale.value = zhCN;
+	kaLang.value = 'en';
 };
 const toolbarEx = (dataSource: KaTableDataSource) => {
 	console.log(dataSource.activeIndex);
@@ -264,10 +268,12 @@ onMounted(() => {});
 		ref="$table"
 		table-title="title"
 		size="small"
+		:default-lang="kaLang"
 		:columns="columns"
 		:page-size="3"
 		:toolbar="{ hasExport: false, hasRemove: false }"
 		:locale="locale"
+		:scroll="{x:'max-content'}"
 		url="/api"
 		:on-before-refresh="
 			async () => {
