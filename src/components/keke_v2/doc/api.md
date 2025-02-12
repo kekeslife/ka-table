@@ -95,6 +95,7 @@
 | onPostAdd                           | 提交Insert之后                                   |
 | onPreAddOrEdit                      | 提交Insert或Update之前                           |
 | onPostAddOrEdit                     | 提交Insert或Update之后                           |
+| onPreEditOrRemove                   | 提交修改或删除之前                               |
 | onPreRemove                         | 提交Remove之前                                   |
 | onPostRemove                        | 提交Remove之后                                   |
 | onBeforeExport                      | 点击导出按钮，显示确认之前                       |
@@ -111,6 +112,10 @@
 | onPostPage                          | 点击分页按钮，提交分页之后                       |
 | onAfterRowClick                     | 点击行之后                                       |
 | onAfterRowDbClick                   | 双击行之后                                       |
+
+
+
+
 
 ### toolbar
 
@@ -169,25 +174,25 @@
 
 #### editorInfo
 
-| 属性                                                         | 说明                                         |
-| ------------------------------------------------------------ | -------------------------------------------- |
-| index                                                        | 排序位置                                     |
-| title?:string                                                | label标签                                    |
-| width?:string                                                | 宽度                                         |
-| position?:'inline'\|'cling'\|'**line**'                      | 位置方式(并列\|紧贴\|独行)                   |
-| componentType?:'**input**'\|'textarea'\|'number'\|'date'\|'select' | 内置组件(文本框\|文本域\|数字\|日期\|选择器) |
-| isPost?: boolean                                             | 是否是实体字段                               |
-| display?: 'readonly' \|'hide'\|'**show**'                    | 显示方式(只读\|隐藏\|显示)                   |
-| precision?: number                                           | ant数字字段的小数位                          |
-| options?: KaEditorItemOption[]\|((key: string) => Promise<KaEditorItemOption[]>) | 选择器选项列表                               |
-| selectMode?: 'multiple'\|'tags'\|'**combobox**'              | ant选择器模式                                |
-| selectSplit?: string                                         | 多选分隔符                                   |
-| rules?: Rule[]                                               | ant校验规则                                  |
-| valueConverter?: (value: any) => Promise<any>                | 自定义值转换                                 |
-| debounceDelay?: number                                       | 防抖延时                                     |
-| customComponent?: Component                                  | 自定义组件                                   |
-| onAfterChange?: (value: any, option?: any) => Promise<void>  | 值改变之后                                   |
-| attrs?: { [propName: string]: any }                          | 其它特性                                     |
+| 属性                                                         | 说明                                                        |
+| ------------------------------------------------------------ | ----------------------------------------------------------- |
+| index                                                        | 排序位置                                                    |
+| title?:string                                                | label标签                                                   |
+| width?:string                                                | 宽度                                                        |
+| position?:'inline'\|'cling'\|'**line**'                      | 位置方式(并列\|紧贴\|独行)。<br />注意：cling只验证第一个框 |
+| componentType?:'**input**'\|'textarea'\|'number'\|'date'\|'select' | 内置组件(文本框\|文本域\|数字\|日期\|选择器)                |
+| isPost?: boolean                                             | 是否是实体字段                                              |
+| display?: 'readonly' \|'hide'\|'**show**'                    | 显示方式(只读\|隐藏\|显示)                                  |
+| precision?: number                                           | ant数字字段的小数位                                         |
+| options?: KaEditorItemOption[]\|((key: string) => Promise<KaEditorItemOption[]>) | 选择器选项列表                                              |
+| selectMode?: 'multiple'\|'tags'\|'**combobox**'              | ant选择器模式                                               |
+| selectSplit?: string                                         | 多选分隔符                                                  |
+| rules?: Rule[]                                               | ant校验规则                                                 |
+| valueConverter?: (value: any) => Promise<any>                | 自定义值转换                                                |
+| debounceDelay?: number                                       | 防抖延时                                                    |
+| customComponent?: Component                                  | 自定义组件                                                  |
+| onAfterChange?: (value: any, option?: any) => Promise<void>  | 值改变之后                                                  |
+| attrs?: { [propName: string]: any }                          | 其它特性                                                    |
 
 #### filterInfo
 
@@ -196,16 +201,17 @@
 | isFilter: boolean                               | 是否开启筛选               |
 | options?:KaEditorItem['options']                | 选择器字段在筛选中的选择项 |
 | width?                                          | 筛选中输入框的宽度         |
+| title?                                          | 标题                       |
 | valueConverter?: KaEditorItem['valueConverter'] | 值转换                     |
 | attrs?: { [propName: string]: any }             | 其它特性                   |
 
 #### exportInfo
 
-| 属性             | 说明                                       |
-| ---------------- | ------------------------------------------ |
-| index: number    | 导出的字段在第几列                         |
-| title?: string   | 导出的字段标题                             |
-| formula?: string | 公式列。$row$行号, $col$列号，后台自动替换 |
+| 属性                | 说明                                       |
+| ------------------- | ------------------------------------------ |
+| index: number\|null | 导出的字段在第几列。null表示不导出         |
+| title?: string      | 导出的字段标题                             |
+| formula?: string    | 公式列。$row$行号, $col$列号，后台自动替换 |
 
 #### importInfo
 

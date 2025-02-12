@@ -44,6 +44,7 @@ export type KaTableLang = {
 	templateError: string;
 	addSuccess: string;
 	editSuccess: string;
+	removeConfirm:string;
 	removeSuccess: string;
 	importSuccess: string;
 	importNoFileError: string;
@@ -55,6 +56,21 @@ export type KaTableLang = {
 	cancel: string;
 	submit: string;
 	summaryTotal: string;
+	all: string;
+	curPage: string;
+	and:string;
+	or:string;
+	equal:string;
+	notEqual:string;
+	greaterThan:string;
+	greaterThanOrEqual:string;
+	lessThan:string;
+	lessThanOrEqual:string;
+	beginWith:string;
+	endWith:string;
+	contain:string;
+	empty:string;
+	notEmpty:string;
 };
 
 /** 字段 */
@@ -112,6 +128,7 @@ export type KaTableCol = {
 		isFilter: boolean;
 		options?: KaEditorItem['options'];
 		width?:ColumnType<any>['width'];
+		title?:string;
 		/** 自定义值转换 */
 		valueConverter?: KaEditorItem['valueConverter'];
 		/** 自定义attr */
@@ -445,6 +462,10 @@ export const kaTableProps = () => ({
 	},
 	/** 提交Insert或Update之后 */
 	onPostAddOrEdit: {
+		type: Function as PropType<KaTableEventHandle>,
+	},
+	/** 提交Insert或Update之前 */
+	onPreEditOrRemove: {
 		type: Function as PropType<KaTableEventHandle>,
 	},
 	/** 提交Remove之前 */

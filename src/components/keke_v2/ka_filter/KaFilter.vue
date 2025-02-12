@@ -9,8 +9,8 @@
 				:style="{ visibility: i === 0 ? 'hidden' : undefined }"
 				size="nomal"
 			>
-				<a-select-option value="and">且</a-select-option>
-				<a-select-option value="or">或</a-select-option>
+				<a-select-option value="and">{{ props.language?.and }}</a-select-option>
+				<a-select-option value="or">{{ props.language?.or }}</a-select-option>
 			</a-select>
 			<ka-filter class="child" :items="item.children" :columns="props.columns" v-if="item.children"></ka-filter>
 			<a-space-compact v-else class="flex-auto-width">
@@ -85,6 +85,7 @@ import * as lodash from 'lodash-es';
 import { KaFilterCol, KaFilterCondition, KaFilterItem, createEmptyItem } from '.';
 import KaInput from '../ka_input/KaInput.vue';
 import dayjs, { Dayjs } from 'dayjs';
+import { KaTableLang } from '../ka_table';
 
 // const conditions = defineModel<KaFilterCondition[]>({});
 // const filterItems = defineModel<KaFilterItem[]>();
@@ -100,6 +101,7 @@ const props = defineProps({
 		type: Array as PropType<KaFilterItem[]>,
 		default: [createEmptyItem()],
 	},
+	language:{ type: Object as PropType<KaTableLang>},
 });
 const items = ref(props.items);
 // const items = ref<KaFilterItem[]>([]);
@@ -108,18 +110,18 @@ const items = ref(props.items);
 let colOptions = [] as { label: string; value: any }[];
 
 const optOptions = [
-	{ label: '等于', value: 'eq' },
-	{ label: '不等于', value: 'neq' },
-	{ label: '大于', value: 'gt' },
-	{ label: '大于等于', value: 'gte' },
-	{ label: '小于', value: 'lt' },
-	{ label: '小于等于', value: 'lte' },
-	{ label: '开头于', value: 'beg' },
-	{ label: '结束于', value: 'end' },
-	{ label: '包含', value: 'like' },
+	{ label: props.language!.equal, value: 'eq' },
+	{ label: props.language!.notEqual, value: 'neq' },
+	{ label: props.language!.greaterThan, value: 'gt' },
+	{ label: props.language!.greaterThanOrEqual, value: 'gte' },
+	{ label: props.language!.lessThan, value: 'lt' },
+	{ label: props.language!.lessThanOrEqual, value: 'lte' },
+	{ label: props.language!.beginWith, value: 'beg' },
+	{ label: props.language!.endWith, value: 'end' },
+	{ label: props.language!.contain, value: 'like' },
 	// { label: '列表', value: 'in' },
-	{ label: '空', value: 'nu' },
-	{ label: '不为空', value: 'nnu' },
+	{ label: props.language!.empty, value: 'nu' },
+	{ label: props.language!.notEmpty, value: 'nnu' },
 ];
 
 const onChangeCol = (item: KaFilterItem, _value: any) => {
@@ -321,11 +323,11 @@ onBeforeMount(() => {
 
 <style scoped>
 .bool {
-	width: 50px;
+	width: 60px;
 	text-align: center;
 }
 .opt {
-	width: 90px;
+	width: 100px;
 	text-align: center;
 }
 .col {

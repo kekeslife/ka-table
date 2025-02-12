@@ -1,6 +1,7 @@
 import { SizeType } from "ant-design-vue/es/config-provider";
 import { FileType } from "ant-design-vue/es/upload/interface";
 import { PropType } from "vue";
+import { KaTableLang } from "../ka_table";
 
 export type KaTableToolbarItem = {
     isShow?: boolean;
@@ -22,6 +23,7 @@ export type KaTableToolbarItemImport = KaTableToolbarItem & {
 
 export const kaTableToolbarProps = () => ({
     size: { type: String as PropType<SizeType>, default: 'small' },
+	language:{ type: Object as PropType<KaTableLang>},
     refresh: {
         type: Object as PropType<KaTableToolbarItem>,
         default: () => ({

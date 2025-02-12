@@ -64,7 +64,7 @@ import { NamePath, ValidateOptions } from 'ant-design-vue/es/form/interface';
 // const editorVals = defineModel({ type: Object as PropType<{ [key: string]: any }>, default: {}, required: true });
 
 const props = defineProps({
-	itemsObj: { type: Object, required: true },
+	itemsObj: { type: Object, required: true }
 });
 
 const $form = ref<FormInstance>(null as unknown as FormInstance);

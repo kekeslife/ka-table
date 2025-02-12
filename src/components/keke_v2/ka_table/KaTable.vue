@@ -102,6 +102,7 @@
 								onClick: onToolbarRemove,
 							}"
 							:activate-color="primaryColor"
+							:language="props.language"
 						>
 							<template #toolbar><slot name="toolbar" :data-source="dataSource"></slot></template>
 						</ka-toolbar>
@@ -186,6 +187,7 @@
 					v-show="tableStatus === 'Filter'"
 					:columns="filterCols"
 					ref="$filter"
+					:language="props.language"
 				></ka-filter>
 				<ka-editor
 					v-if="props.toolbar.hasAdd || props.toolbar.hasEdit"
@@ -260,7 +262,7 @@ import axios, { AxiosInstance } from 'axios';
 // import qs from 'qs';
 import { NamePath, ValidateOptions } from 'ant-design-vue/es/form/interface';
 import { FileType } from 'ant-design-vue/es/upload/interface';
-import {langCN,langEN} from '../lang';
+import { langCN, langEN } from '../lang';
 
 // #region 扩展
 /** dayjs */
@@ -395,7 +397,7 @@ watch(
 	newLang => {
 		if (newLang === 'en') {
 			Object.assign(props.language!, langEN);
-		} else if (newLang === 'cn'){
+		} else if (newLang === 'cn') {
 			Object.assign(props.language!, langCN);
 		}
 	}
@@ -635,7 +637,6 @@ const loadData = async () => {
 		);
 
 		const data = res.data;
-
 		if (!data.isSuccess) {
 			throw new Error(data.message || props.language.loadError);
 		} else {
@@ -1012,6 +1013,7 @@ const editSubmit = async () => {
 
 		if (!(await eventHandle(props.onPreAddOrEdit))) return;
 		if (!(await eventHandle(props.onPreEdit))) return;
+		if (!(await eventHandle(props.onPreEditOrRemove))) return;
 
 		const newData = await updateData();
 
@@ -1088,6 +1090,7 @@ const onToolbarRemove = async () => {
 		}
 
 		if (!(await eventHandle(props.onPreRemove))) return;
+		if (!(await eventHandle(props.onPreEditOrRemove))) return;
 
 		tableStatus.value = 'Remove';
 		await removeData();

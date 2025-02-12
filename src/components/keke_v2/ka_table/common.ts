@@ -288,7 +288,7 @@ export const createFilterCols = (columns: KaTableCols, editorObj: { [key: string
 			if (tableCol.filterInfo?.isFilter) {
 				const filterCol: KaFilterCol = {
 					key: tableCol.key!,
-					title: getFirstNotNull([tableCol.listInfo?.title, tableCol.title, tableCol.key!]),
+					title: getFirstNotNull([tableCol.filterInfo?.title,tableCol.listInfo?.title, tableCol.title, tableCol.key!]),
 					componentType: 'input',
 					valueConverter: tableCol.filterInfo.valueConverter,
 					debounceDelay: editor?.debounceDelay,

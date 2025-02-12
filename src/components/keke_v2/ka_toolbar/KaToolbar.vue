@@ -16,8 +16,8 @@
 			<a-tooltip v-if="props.export.isShow !== false" :title="props.export.title">
 				<a-popconfirm
 					:title="props.export.title"
-					ok-text="所有"
-					cancel-text="本页"
+					:ok-text="props.language?.all"
+					:cancel-text="props.language?.curPage"
 					:ok-button-props="confirmBtnProps"
 					:cancel-button-props="confirmBtnProps"
 					@confirm="props.export.onExportAll"
@@ -57,8 +57,8 @@
 			</a-tooltip>
 			<a-tooltip v-if="props.remove.isShow !== false" :title="props.remove.title">
 				<a-popconfirm
-					title="确认删除"
-					ok-text="确认"
+					:title="props.language?.removeConfirm"
+					:ok-text="props.language?.confirm"
 					:ok-button-props="confirmBtnProps"
 					:show-cancel="false"
 					@confirm="props.remove.onClick"
