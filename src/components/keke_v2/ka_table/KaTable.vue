@@ -29,7 +29,7 @@
 			:columns="antCols"
 			:scroll="props.scroll"
 		>
-			<template v-for="(_v, k) in $slots" v-slot:[k] :key="k">
+			<template v-for="(_v, k) in slots" v-slot:[k] :key="k">
 				<slot :name="k"></slot>
 			</template>
 			<!-- 汇总栏 -->
@@ -282,6 +282,7 @@ if ((app?.proxy as any).$axios) {
 //  #region 普通
 /** props */
 const props = defineProps(kaTableProps());
+const slots = defineSlots()
 
 /** 样式 */
 const { useToken } = theme;
@@ -762,7 +763,7 @@ const sortSubmit = async () => {
 };
 /** 设置排序值 */
 const setSorters = (conditions: KaSorterCondition[]) => {
-	const allConditions = [];
+	const allConditions:KaSorterCondition[] = [];
 	for (const key in sorterObj.value) {
 		const condition = conditions.find(item => item.key === key);
 		if (condition) {

@@ -261,6 +261,21 @@ listInfo: {
 
 
 
+# 排序 - 自定义
+
+```javascript
+//js可通过setSorters设置{ key: '自定义', order: 'ascend', index: 1 }
+```
+
+```c#
+// c#
+table.CustomerOrders = [
+	new KaTableCustomSort<ItDemand>{SortExpression = d => d.ReqDate, Key = "自定义", Order = "desc"},
+];
+```
+
+
+
 
 
 # 导出 - 维护Excel

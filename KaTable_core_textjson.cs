@@ -1,22 +1,36 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Data.Entity;
-using System.Data.Entity.Validation;
+﻿using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
-using System.Web;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
+using System.Runtime.InteropServices.JavaScript;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Microsoft.EntityFrameworkCore;
+// using Newtonsoft.Json;
+// using Newtonsoft.Json.Serialization;
 using OfficeOpenXml;
+using DateTime = System.DateTime;
 
-namespace ypcBase
+namespace Sagacity.Utility
 {
-    public sealed class KaTable<TEntity, TDto> where TEntity : class where TDto : class, new()
+    public class KaTable<TEntity, TDto> where TEntity : class where TDto : class, new()
     {
+        private static readonly Lang LangChinese = new Lang
+        {
+            TooManyRows = "有多笔数据",
+            NoRecords = "无此记录或已变更",
+            RecordChanged = "记录已变更",
+            ExcelTitle = "Excel第{0}列标题不是({1})",
+        };
+
+        private static readonly Lang LangEnglish = new Lang
+        {
+            TooManyRows = "There are multiple records",
+            NoRecords = "No such record or changed",
+            RecordChanged = "Record changed",
+            ExcelTitle = "Excel column {0} title is not ({1})",
+        };
+
         // Contains的表达式
         private readonly MethodInfo _containsMethod =
             ((MethodCallExpression)((Expression<Func<IEnumerable<object>, bool>>)((q) =>
@@ -31,111 +45,136 @@ namespace ypcBase
         private readonly IList<Expression<Func<TEntity, object>>> _includeExps =
             new List<Expression<Func<TEntity, object>>>();
 
+        // JSON反序列化设置
+        private readonly JsonSerializerOptions _jsonDesSetting = new()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            ReferenceHandler = ReferenceHandler.IgnoreCycles,
+        };
+
         // JSON序列化设置
-        private readonly JsonSerializerSettings _jsonSetting = new JsonSerializerSettings
+        private readonly JsonSerializerOptions _jsonSetting = new()
         {
             // 排除null
-            NullValueHandling = NullValueHandling.Ignore,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            // NullValueHandling = NullValueHandling.Ignore,
+
             // 不循环引用
-            ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+            // ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+            ReferenceHandler = ReferenceHandler.IgnoreCycles,
+
             // 首字母小写
-            ContractResolver = new CamelCasePropertyNamesContractResolver(),
+            // ContractResolver = new CamelCasePropertyNamesContractResolver(),
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
 
         // JSON反序列化第一层
-        private readonly JsonSerializerSettings _jsonSettingDepth1 = new JsonSerializerSettings
+        private readonly JsonSerializerOptions _jsonSettingDepth1 = new()
         {
-            MaxDepth = 1,
-            Error = (s, e) => e.ErrorContext.Handled = true
+            // // PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            // // ReferenceHandler = ReferenceHandler.IgnoreCycles,
+            // MaxDepth = 1,
+            // Error = (s, e) => e.ErrorContext.Handled = true
+
+            Converters = { new MaxDepthConverter(1) },
+            PropertyNameCaseInsensitive = true
         };
 
         // JSON反序列化2层
-        private readonly JsonSerializerSettings _jsonSettingDepth2 = new JsonSerializerSettings
+        private readonly JsonSerializerOptions _jsonSettingDepth2 = new()
         {
-            MaxDepth = 2,
-            Error = (s, e) => e.ErrorContext.Handled = true
+            // // ReferenceHandler = ReferenceHandler.IgnoreCycles,
+            // // PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            // MaxDepth = 2,
+            // Error = (s, e) => e.ErrorContext.Handled = true
+
+            Converters = { new MaxDepthConverter(2) },
+            PropertyNameCaseInsensitive = true
         };
 
         private DbContext Db { get; }
 
+        private Lang LangLocale { get; }
+
         /// <summary>
         /// 自定义Where
         /// </summary>
-        public Expression<Func<TEntity, bool>> CustomerWhere { get; set; }
+        public Expression<Func<TEntity, bool>>? CustomerWhere { get; set; }
 
         /// <summary>
         /// 自定义Select
         /// </summary>
-        public Expression<Func<TEntity, TDto>> CustomerSelect { get; set; }
+        public Expression<Func<TEntity, TDto>>? CustomerSelect { get; set; }
 
         /// <summary>
         /// 自定义聚合,Total为总笔数,加入会加快，否则会产生两笔sum
         /// </summary>
-        public Expression<Func<IGrouping<int, TEntity>, object>> CustomerSummary { get; set; }
+        public Expression<Func<IGrouping<int, TEntity>, object>>? CustomerSummary { get; set; }
 
         /// <summary>
         /// 读取数据后
         /// </summary>
-        public Action<IList<TDto>> AfterLoadData { get; set; }
+        public Action<IList<TDto>>? AfterLoadData { get; set; }
 
         /// <summary>
         /// 导出，在读取数据之前
         /// </summary>
-        public Action<KaTableExportParameter> BeforeExportLoadData { get; set; }
+        public Action<KaTableExportParameter>? BeforeExportLoadData { get; set; }
 
         /// <summary>
         /// 导出，在读取数据之后，产生Excel之前
         /// </summary>
-        public Action<IList<TDto>> BeforeExport { get; set; }
+        public Action<IList<TDto>>? BeforeExport { get; set; }
 
         /// <summary>
         /// 导出，产生Excel之后
         /// </summary>
-        public Action<ExcelWorksheet, KaTableExportCondition[], int> AfterExport { get; set; }
+        public Action<ExcelWorksheet, KaTableExportCondition[], int>? AfterExport { get; set; }
 
         /// <summary>
         /// 插入之前
         /// </summary>
-        public Action<TDto> BeforeInsert { get; set; }
+        public Action<TDto>? BeforeInsert { get; set; }
 
         /// <summary>
         /// 插入之后
         /// </summary>
-        public Action<TDto> AfterInsert { get; set; }
+        public Action<TDto>? AfterInsert { get; set; }
 
         /// <summary>
         /// 更新数据之前，newRecord, oldRecord
         /// </summary>
-        public Action<TEntity, TDto> BeforeUpdate { get; set; }
+        public Action<TEntity, TDto>? BeforeUpdate { get; set; }
 
         /// <summary>
         /// 删除数据之前
         /// </summary>
-        public Action<TEntity, TDto> BeforeDelete { get; set; }
+        public Action<TEntity, TDto>? BeforeDelete { get; set; }
 
         /// <summary>
         /// 删除数据之后
         /// </summary>
-        public Action<TEntity, TDto> AfterDelete { get; set; }
+        public Action<TEntity, TDto>? AfterDelete { get; set; }
 
         /// <summary>
         /// 导入之前
         /// </summary>
-        public Action<TDto[]> BeforeImport { get; set; }
+        public Action<TDto[]>? BeforeImport { get; set; }
 
         /// <summary>
         /// 导入之后
         /// </summary>
-        public Action<TDto[]> AfterImport { get; set; }
+        public Action<TDto[]>? AfterImport { get; set; }
 
         /// <summary>
         /// 更新数据之后，newRecord, oldRecord
         /// </summary>
-        public Action<TEntity, TDto> AfterUpdate { get; set; }
+        public Action<TEntity, TDto>? AfterUpdate { get; set; }
 
-        public KaTable(DbContext db)
+        public KaTable(DbContext db, string lang = "cn")
         {
             Db = db;
+            LangLocale = lang == "cn" ? LangChinese : LangEnglish;
 
             var entityProps = typeof(TEntity).GetProperties();
             foreach (var prop in entityProps)
@@ -148,9 +187,10 @@ namespace ypcBase
                 _entityProps.Add(prop.Name, prop);
             }
 
+
             if (_keyProps.Count == 0)
             {
-                throw new Exception("未设置主键");
+                throw new Exception("System:未设置主键");
             }
 
             var dtoProps = typeof(TDto).GetProperties();
@@ -160,74 +200,72 @@ namespace ypcBase
             }
         }
 
-        public void Action(HttpContext context)
+        public IResult Action(HttpContext context)
         {
+            IResult result;
             try
             {
-                var act = context.Request.Params["actNo"];
-                switch (act.ToUpper())
+                var act = context.Request.Form["actNo"];
+                switch (act.ToString().ToUpper())
                 {
                     case "SEARCH":
-                        SearchAction(context);
+                        result = SearchAction(context);
                         break;
                     case "INSERT":
-                        InsertAction(context);
+                        result = InsertAction(context);
                         break;
                     case "UPDATE":
-                        UpdateAction(context);
+                        result = UpdateAction(context);
                         break;
                     case "REMOVE":
-                        DeleteAction(context);
+                        result = DeleteAction(context);
                         break;
                     case "EXPORT":
-                        ExportAction(context);
+                        result = ExportAction(context);
                         break;
                     case "IMPORT_FILE":
-                        ImportFileAction(context);
+                        result = ImportFileAction(context);
                         break;
                     case "IMPORT":
-                        ImportAction(context);
+                        result = ImportAction(context);
                         break;
                     case "DOWNLOAD_TEMPLATE":
-                        DownloadTemplateAction(context);
+                        result = DownloadTemplateAction(context);
                         break;
                     default:
-                        throw new Exception("未提供此操作");
+                        throw new Exception("System:未提供此操作");
                 }
             }
-            catch (DbEntityValidationException ex)
+            catch (ValidationException ex)
             {
-                var result = new KaTableResponse
+                result = Results.Json(new KaTableResponse
                 {
                     IsSuccess = false,
-                    Message = ex.Message,
-                };
-
-                if (ex.EntityValidationErrors.Any())
+                    Message = ex.ValidationResult.ErrorMessage ?? ex.Message
+                });
+            }
+            catch (DbUpdateException ex)
+            {
+                result = Results.Json(new KaTableResponse
                 {
-                    if (ex.EntityValidationErrors.First().ValidationErrors.Any())
-                    {
-                        result.Message = ex.EntityValidationErrors.First().ValidationErrors.First().ErrorMessage;
-                    }
-                }
-
-                context.Response.ContentType = "application/json";
-                context.Response.Write(JsonConvert.SerializeObject(result, _jsonSetting));
+                    IsSuccess = false,
+                    Message = ex.InnerException?.Message ?? ex.Message
+                });
             }
             catch (Exception ex)
             {
-                var result = new KaTableResponse
+                result = Results.Json(new KaTableResponse
                 {
                     IsSuccess = false,
                     Message = ex.Message
-                };
-                context.Response.ContentType = "application/json";
-                context.Response.Write(JsonConvert.SerializeObject(result, _jsonSetting));
+                });
             }
             //finally
             //{
             //    context.Response.End();
             //}
+
+            return result;
         }
 
         public KaTable<TEntity, TDto> Include(Expression<Func<TEntity, object>> exp)
@@ -238,117 +276,126 @@ namespace ypcBase
 
         #region action
 
-        private void SearchAction(HttpContext context)
+        private IResult SearchAction(HttpContext context)
         {
-            var pars = context.Request.Form["searchPar"];
+            var pars = context.Request.Form["searchPar"].ToString();
             if (string.IsNullOrEmpty(pars))
             {
-                throw new Exception("没有参数searchPar");
+                throw new Exception("System:没有参数searchPar");
             }
 
-            var searchPar = JsonConvert.DeserializeObject<KaTableSearchParameter>(pars);
-            var result = SelectRecords(searchPar);
+            // // var searchPar = JsonConvert.DeserializeObject<KaTableSearchParameter>(pars,_jsonDesSetting);
+            // var searchPar = JsonConvert.DeserializeObject<KaTableSearchParameter>(pars, _jsonDesSetting);
+            var searchPar = JsonSerializer.Deserialize<KaTableSearchParameter>(pars, _jsonDesSetting);
+            var result = SelectRecords(searchPar!);
 
             AfterLoadData?.Invoke(result.Records);
 
-            context.Response.ContentType = "application/json";
-            context.Response.Write(JsonConvert.SerializeObject(result, _jsonSetting));
+            return Results.Json(result);
+
+            // context.Response.ContentType = "application/json";
+            // context.Response.WriteAsJsonAsync(JsonSerializer.Serialize(result,_jsonSetting));
         }
 
-        private void ExportAction(HttpContext context)
+        private IResult ExportAction(HttpContext context)
         {
             var pars = context.Request.Form["exportPar"];
             if (string.IsNullOrEmpty(pars))
             {
-                throw new Exception("exportPar");
+                throw new Exception("System:exportPar");
             }
 
-            var exportPar = JsonConvert.DeserializeObject<KaTableExportParameter>(pars);
+            // var exportPar = JsonConvert.DeserializeObject<KaTableExportParameter>(pars!, _jsonDesSetting);
+            var exportPar = JsonSerializer.Deserialize<KaTableExportParameter>(pars!, _jsonDesSetting);
 
-            BeforeExportLoadData?.Invoke(exportPar);
-            var result = SelectRecords(exportPar);
+            BeforeExportLoadData?.Invoke(exportPar!);
+            var result = SelectRecords(exportPar!);
             BeforeExport?.Invoke(result.Records);
 
             var recordLen = result.Records.Count;
-            //ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-            using (var excel = new ExcelPackage())
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+            using var excel = new ExcelPackage();
+            var worksheet = excel.Workbook.Worksheets.Add(exportPar!.FileName);
+            var colIndex = 1;
+            foreach (var col in exportPar.Cols)
             {
-                var worksheet = excel.Workbook.Worksheets.Add(exportPar.FileName);
-                var colIndex = 1;
-                foreach (var col in exportPar.Cols)
+                if (!string.IsNullOrWhiteSpace(col.Formula))
                 {
-                    if (!string.IsNullOrWhiteSpace(col.Formula))
+                    // 公式
+                    for (var rowIndex = 2; rowIndex < recordLen + 2; rowIndex++)
                     {
-                        // 公式
-                        for (var rowIndex = 2; rowIndex < recordLen + 2; rowIndex++)
-                        {
-                            worksheet.Cells[rowIndex, colIndex].Formula = col.Formula
-                                .Replace("$row$", rowIndex.ToString()).Replace("$col$", colIndex.ToString());
-                        }
+                        worksheet.Cells[rowIndex, colIndex].Formula = col.Formula
+                            .Replace("$row$", rowIndex.ToString()).Replace("$col$", colIndex.ToString());
                     }
-                    else
-                    {
-                        var rowIndex = 2;
-                        foreach (var record in result.Records)
-                        {
-                            worksheet.Cells[rowIndex, colIndex].Value = GetPropertyValue(record, col.Key);
-                            rowIndex++;
-                        }
-                    }
-
-                    // 标题
-                    worksheet.Cells[1, colIndex].Value = col.Title;
-
-                    colIndex++;
                 }
-
-                AfterExport?.Invoke(worksheet, exportPar.Cols, recordLen);
-
-                for (var i = 0; i < exportPar.Cols.Length; i++)
+                else
                 {
-                    if (!string.IsNullOrWhiteSpace(exportPar.Cols[i].DateFormat))
+                    var rowIndex = 2;
+                    foreach (var record in result.Records)
                     {
-                        worksheet.Column(i + 1).Style.Numberformat.Format = exportPar.Cols[i].DateFormat;
+                        worksheet.Cells[rowIndex, colIndex].Value = GetPropertyValue(record, col.Key);
+                        rowIndex++;
                     }
                 }
 
-                worksheet.Cells.AutoFitColumns();
-                worksheet.Cells.Style.WrapText = true;
+                // 标题
+                worksheet.Cells[1, colIndex].Value = col.Title;
 
-                context.Response.Clear();
-                context.Response.Buffer = true;
-                context.Response.ContentEncoding = Encoding.UTF8;
-                var stream = excel.GetAsByteArray();
-                context.Response.AddHeader("Content-Length", stream.Length.ToString());
-                context.Response.AppendHeader("File-Name", exportPar.FileName);
-                context.Response.BinaryWrite(stream);
-                context.Response.Flush();
+                colIndex++;
             }
+
+            AfterExport?.Invoke(worksheet, exportPar.Cols, recordLen);
+
+            for (var i = 0; i < exportPar.Cols.Length; i++)
+            {
+                if (!string.IsNullOrWhiteSpace(exportPar.Cols[i].DateFormat))
+                {
+                    worksheet.Column(i + 1).Style.Numberformat.Format = exportPar.Cols[i].DateFormat;
+                }
+            }
+
+            worksheet.Cells.AutoFitColumns();
+            worksheet.Cells.Style.WrapText = true;
+
+            // context.Response.Clear();
+            // context.Response.Buffer = true;
+            // context.Response.ContentEncoding = Encoding.UTF8;
+            var stream = excel.GetAsByteArray();
+            // context.Response.AddHeader("Content-Length", stream.Length.ToString());
+            // context.Response.AppendHeader("File-Name", exportPar.FileName);
+            // context.Response.BinaryWrite(stream);
+            // context.Response.Flush();
+
+            return Results.File(stream);
         }
 
-        private void InsertAction(HttpContext context)
+        private IResult InsertAction(HttpContext context)
         {
             var data = context.Request.Form["record"];
             if (string.IsNullOrEmpty(data))
             {
-                throw new Exception("没有参数record");
+                throw new Exception("System:没有参数record");
             }
 
-            var dto = JsonConvert.DeserializeObject<TDto>(data);
+            // var dto = JsonConvert.DeserializeObject<TDto>(data!, _jsonDesSetting);
+            var dto = JsonSerializer.Deserialize<TDto>(data!, _jsonDesSetting);
+
 
             // var record = JsonConvert.DeserializeObject<Dictionary<string, object>>(data);
             // var dto = CreateObject(record, out var entity);
 
-            BeforeInsert?.Invoke(dto);
+            BeforeInsert?.Invoke(dto!);
             // BeforeInsert改变dto之后再产生entity
-            var entity = JsonConvert.DeserializeObject<TEntity>(JsonConvert.SerializeObject(dto), _jsonSettingDepth1);
+            // var entity = JsonConvert.DeserializeObject<TEntity>(JsonConvert.SerializeObject(dto), _jsonSettingDepth1);
+            // var entity = JsonSerializer.Deserialize<TEntity>(JsonSerializer.Serialize(dto, _jsonSetting), _jsonSettingDepth1);
+            var entity = GetFlatObject<TEntity>(JsonSerializer.Serialize(dto, _jsonSetting));
 
             using (var transaction = Db.Database.BeginTransaction())
             {
                 try
                 {
                     InsertRecord(entity);
-                    AfterInsert?.Invoke(dto);
+                    AfterInsert?.Invoke(dto!);
                 }
                 catch
                 {
@@ -359,46 +406,53 @@ namespace ypcBase
                 transaction.Commit();
             }
 
-            context.Response.ContentType = "application/json";
-            context.Response.Write(JsonConvert.SerializeObject(
-                new KaTableResponseRecord<TEntity> { IsSuccess = true, Record = entity }, _jsonSetting));
+            return Results.Json(
+                new KaTableResponseRecord<TEntity> { IsSuccess = true, Record = entity });
+            // context.Response.ContentType = "application/json";
+            // context.Response.Write(JsonSerializer.Serialize(
+            //     new KaTableResponseRecord<TEntity> { IsSuccess = true, Record = entity }, _jsonSetting));
         }
 
-        private void UpdateAction(HttpContext context)
+        private IResult UpdateAction(HttpContext context)
         {
             var oldRecord = context.Request.Form["oldRecord"];
             if (string.IsNullOrEmpty(oldRecord))
             {
-                throw new Exception("没有参数oldRecord");
+                throw new Exception("System:没有参数oldRecord");
             }
 
             var newRecord = context.Request.Form["newRecord"];
             if (string.IsNullOrEmpty(newRecord))
             {
-                throw new Exception("没有参数newRecord");
+                throw new Exception("System:没有参数newRecord");
             }
 
             TEntity resultObj;
 
-            var oldDto = JsonConvert.DeserializeObject<TDto>(oldRecord);
-            var oldFlatDto = JsonConvert.DeserializeObject<TDto>(oldRecord, _jsonSettingDepth1);
+            // var oldDto = JsonConvert.DeserializeObject<TDto>(oldRecord!, _jsonDesSetting);
+            var oldDto = JsonSerializer.Deserialize<TDto>(oldRecord!, _jsonDesSetting);
+            // var oldFlatDto = JsonConvert.DeserializeObject<TDto>(oldRecord!, _jsonSettingDepth1);
+            // var oldFlatDto = JsonSerializer.Deserialize<TDto>(oldRecord!, _jsonSettingDepth1);
+            var oldFlatDto = GetFlatObject<TDto>(oldRecord!);
 
             using (var transaction = Db.Database.BeginTransaction())
             {
                 try
                 {
                     // 从前端的oldRecord读取数据中的旧数据
-                    var dbRecord = GetEntityByJson(oldRecord);
+                    var dbRecord = GetEntityByJson(oldRecord!);
                     // 检查数据库中的数据时候和前端的oldRecord第一层相同
                     CheckOldRecord(dbRecord, oldFlatDto);
 
                     // 将前端的newRecord数据更新至dbRecord
-                    SetRecordVal(dbRecord,
-                        JsonConvert.DeserializeObject<Dictionary<string, object>>(newRecord, _jsonSettingDepth1));
-                    BeforeUpdate?.Invoke(dbRecord, oldDto);
+                    // SetRecordVal(dbRecord,JsonConvert.DeserializeObject<Dictionary<string, object>>(newRecord!, _jsonSettingDepth1)!);
+                    // SetRecordVal(dbRecord, JsonSerializer.Deserialize<Dictionary<string, object>>(newRecord!, _jsonSettingDepth1)!);
+                    SetRecordVal(dbRecord, GetFlatObject<Dictionary<string, JsonElement>>(newRecord!));
+
+                    BeforeUpdate?.Invoke(dbRecord, oldDto!);
                     Db.SaveChanges();
 
-                    AfterUpdate?.Invoke(dbRecord, oldDto);
+                    AfterUpdate?.Invoke(dbRecord, oldDto!);
 
                     resultObj = dbRecord;
                 }
@@ -411,37 +465,41 @@ namespace ypcBase
                 transaction.Commit();
             }
 
-            context.Response.ContentType = "application/json";
-            context.Response.Write(JsonConvert.SerializeObject(
-                new KaTableResponseRecord<TEntity> { IsSuccess = true, Record = resultObj }, _jsonSetting));
+            return Results.Json(new KaTableResponseRecord<TEntity> { IsSuccess = true, Record = resultObj });
+            // context.Response.ContentType = "application/json";
+            // context.Response.Write(JsonSerializer.Serialize(
+            //     new KaTableResponseRecord<TEntity> { IsSuccess = true, Record = resultObj }, _jsonSetting));
         }
 
-        private void DeleteAction(HttpContext context)
+        private IResult DeleteAction(HttpContext context)
         {
             var record = context.Request.Form["record"];
             if (string.IsNullOrEmpty(record))
             {
-                throw new Exception("没有参数record");
+                throw new Exception("System:没有参数record");
             }
 
-            var oldDto = JsonConvert.DeserializeObject<TDto>(record);
-            var oldFlatDto = JsonConvert.DeserializeObject<TDto>(record, _jsonSettingDepth1);
+            // var oldDto = JsonConvert.DeserializeObject<TDto>(record!, _jsonDesSetting);
+            var oldDto = JsonSerializer.Deserialize<TDto>(record!, _jsonDesSetting);
+            // var oldFlatDto = JsonConvert.DeserializeObject<TDto>(record!, _jsonSettingDepth1);
+            // var oldFlatDto = JsonSerializer.Deserialize<TDto>(record!, _jsonSettingDepth1);
+            var oldFlatDto = GetFlatObject<TDto>(record!);
 
             using (var transaction = Db.Database.BeginTransaction())
             {
                 try
                 {
                     // 从前端的oldRecord读取数据中的旧数据
-                    var dbRecord = GetEntityByJson(record);
+                    var dbRecord = GetEntityByJson(record!);
                     // 检查数据库中的数据时候和前端的oldRecord第一层相同
                     CheckOldRecord(dbRecord, oldFlatDto);
 
-                    BeforeDelete?.Invoke(dbRecord, oldDto);
+                    BeforeDelete?.Invoke(dbRecord, oldDto!);
 
                     Db.Set<TEntity>().Remove(dbRecord);
                     Db.SaveChanges();
 
-                    AfterDelete?.Invoke(dbRecord, oldDto);
+                    AfterDelete?.Invoke(dbRecord, oldDto!);
                 }
                 catch
                 {
@@ -452,53 +510,61 @@ namespace ypcBase
                 transaction.Commit();
             }
 
-            context.Response.ContentType = "application/json";
-            context.Response.Write(JsonConvert.SerializeObject(new KaTableResponse { IsSuccess = true }, _jsonSetting));
+            return Results.Json(new KaTableResponse { IsSuccess = true });
+
+            // context.Response.ContentType = "application/json";
+            // context.Response.Write(JsonSerializer.Serialize(new KaTableResponse { IsSuccess = true }, _jsonSetting));
         }
 
-        private void ImportFileAction(HttpContext context)
+        private IResult ImportFileAction(HttpContext context)
         {
-            var file = context.Request.Files["file"];
+            var file = context.Request.Form.Files["file"];
             if (file == null)
             {
-                throw new Exception("没有文件");
+                throw new Exception("System:没有文件");
             }
 
             var colsStr = context.Request.Form["cols"];
             if (string.IsNullOrEmpty(colsStr))
             {
-                throw new Exception("没有参数cols");
+                throw new Exception("System:没有参数cols");
             }
 
-            var cols = JsonConvert.DeserializeObject<KaTableImportCol[]>(colsStr);
-            var result = GetRecordsByFile(cols, file);
+            // var cols = JsonConvert.DeserializeObject<KaTableImportCol[]>(colsStr!, _jsonDesSetting);
+            var cols = JsonSerializer.Deserialize<KaTableImportCol[]>(colsStr!, _jsonDesSetting);
+            var result = GetRecordsByFile(cols!, file);
 
-            context.Response.ContentType = "application/json";
-            context.Response.Write(JsonConvert.SerializeObject(result, _jsonSetting));
+            return Results.Json(result);
+
+            // context.Response.ContentType = "application/json";
+            // context.Response.Write(JsonSerializer.Serialize(result, _jsonSetting));
         }
 
-        private void ImportAction(HttpContext context)
+        private IResult ImportAction(HttpContext context)
         {
             var data = context.Request.Form["records"];
             if (string.IsNullOrEmpty(data))
             {
-                throw new Exception("没有参数records");
+                throw new Exception("System:没有参数records");
             }
 
-            var dto = JsonConvert.DeserializeObject<TDto[]>(data);
+            // var dto = JsonConvert.DeserializeObject<TDto[]>(data!, _jsonDesSetting);
+            var dto = JsonSerializer.Deserialize<TDto[]>(data!, _jsonDesSetting);
 
             // var record = JsonConvert.DeserializeObject<Dictionary<string, object>>(data);
             // var dto = CreateObject(record, out var entity);
 
-            BeforeImport?.Invoke(dto);
-            var entity = JsonConvert.DeserializeObject<TEntity[]>(JsonConvert.SerializeObject(dto), _jsonSettingDepth2);
+            BeforeImport?.Invoke(dto!);
+            // var entity = JsonConvert.DeserializeObject<TEntity[]>(JsonConvert.SerializeObject(dto), _jsonSettingDepth2);
+            // var entity = JsonSerializer.Deserialize<TEntity[]>(JsonSerializer.Serialize(dto, _jsonSetting), _jsonSettingDepth2);
+            var entity = GetFlatObject<TEntity[]>(JsonSerializer.Serialize(dto, _jsonSetting), _jsonSettingDepth2);
 
             using (var transaction = Db.Database.BeginTransaction())
             {
                 try
                 {
                     ImportRecord(entity);
-                    AfterImport?.Invoke(dto);
+                    AfterImport?.Invoke(dto!);
                 }
                 catch
                 {
@@ -509,67 +575,46 @@ namespace ypcBase
                 transaction.Commit();
             }
 
-            context.Response.ContentType = "application/json";
-            context.Response.Write(JsonConvert.SerializeObject(new KaTableResponse { IsSuccess = true }, _jsonSetting));
+            return Results.Json(new KaTableResponse { IsSuccess = true });
+
+            // context.Response.ContentType = "application/json";
+            // context.Response.Write(JsonSerializer.Serialize(new KaTableResponse { IsSuccess = true }, _jsonSetting));
         }
 
-        private void DownloadTemplateAction(HttpContext context)
+        private IResult DownloadTemplateAction(HttpContext context)
         {
             var colsStr = context.Request.Form["cols"];
             if (string.IsNullOrEmpty(colsStr))
             {
-                throw new Exception("没有参数cols");
+                throw new Exception("System:没有参数cols");
             }
 
-            var cols = JsonConvert.DeserializeObject<KaTableImportCol[]>(colsStr);
-            //ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-            using (var excel = new ExcelPackage())
+            // var cols = JsonConvert.DeserializeObject<KaTableImportCol[]>(colsStr!, _jsonDesSetting);
+            var cols = JsonSerializer.Deserialize<KaTableImportCol[]>(colsStr!, _jsonDesSetting);
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+            using var excel = new ExcelPackage();
+            var worksheet = excel.Workbook.Worksheets.Add("template");
+            for (var i = 0; i < cols!.Length; i++)
             {
-                var worksheet = excel.Workbook.Worksheets.Add("template");
-                for (var i = 0; i < cols.Length; i++)
+                var col = cols[i];
+                if (!string.IsNullOrEmpty(col.Title))
                 {
-                    var col = cols[i];
-                    if (!string.IsNullOrEmpty(col.Title))
-                    {
-                        worksheet.Cells[1, i + 1].Value = col.Title;
-                    }
+                    worksheet.Cells[1, i + 1].Value = col.Title;
                 }
-
-                worksheet.Cells.AutoFitColumns();
-                worksheet.Cells.Style.WrapText = true;
-
-                context.Response.Clear();
-                context.Response.Buffer = true;
-                context.Response.ContentEncoding = Encoding.UTF8;
-                var stream = excel.GetAsByteArray();
-                context.Response.AddHeader("Content-Length", stream.Length.ToString());
-                context.Response.BinaryWrite(stream);
-                context.Response.Flush();
             }
-        }
 
-        #endregion
+            worksheet.Cells.AutoFitColumns();
+            worksheet.Cells.Style.WrapText = true;
 
-        #region test
+            // context.Response.Clear();
+            // context.Response.Buffer = true;
+            // context.Response.ContentEncoding = Encoding.UTF8;
+            var stream = excel.GetAsByteArray();
+            // context.Response.AddHeader("Content-Length", stream.Length.ToString());
+            // context.Response.BinaryWrite(stream);
+            // context.Response.Flush();
 
-        public Expression<Func<TEntity, bool>> TestCreateWhereExpression(KaTableWhereCondition[] conditions)
-        {
-            return CreateWhereExpression(conditions);
-        }
-
-        public KaTableSearchResponse<TDto> TestSelectRecords(KaTableSearchParameter searchPar)
-        {
-            return SelectRecords(searchPar);
-        }
-
-        public TDto TestCreateObject(Dictionary<string, object> data, out TEntity surfaceEntity)
-        {
-            return CreateObject(data, out surfaceEntity);
-        }
-
-        public Expression<Func<TEntity, bool>> TestCreateUpdateWhereExpression(Dictionary<string, object> record)
-        {
-            return CreateUpdateWhereExpression(record);
+            return Results.File(stream);
         }
 
         #endregion
@@ -630,7 +675,7 @@ namespace ypcBase
 
             // order by
             var sortConditions = searchPar.SortConditions;
-            if (sortConditions == null || sortConditions.Length == 0)
+            if (sortConditions.Length == 0)
             {
                 sortConditions = _keyProps.Select(k => new KaTableSortCondition
                 {
@@ -668,7 +713,7 @@ namespace ypcBase
             }
             else if (typeof(TEntity).IsSubclassOf(typeof(TDto)))
             {
-                result.Records = data.ToList().ConvertAll(l => l as TDto);
+                result.Records = data.ToList().ConvertAll(l => l as TDto)!;
             }
             else
             {
@@ -686,7 +731,7 @@ namespace ypcBase
             Db.SaveChanges();
         }
 
-        private void SetRecordVal(TEntity entity, Dictionary<string, object> newRecord)
+        private void SetRecordVal(TEntity entity, Dictionary<string, JsonElement> newRecord)
         {
             foreach (var col in newRecord)
             {
@@ -694,16 +739,18 @@ namespace ypcBase
 
                 if (!_dtoProps.ContainsKey(key))
                 {
-                    throw new Exception($"无此属性{key}");
+                    throw new Exception($"System:无此属性{key}");
                 }
 				
                 if (!_entityProps.TryGetValue(key, out var entityProp))
                 {
-                    // throw new Exception($"无此属性{key}");
+                    // throw new Exception($"System:无此属性{key}");
 					continue;
                 }
 
-                entityProp.SetValue(entity, col.Value);
+                var colVal = GetJsonElementValue(col.Value, entityProp.PropertyType);
+
+                entityProp.SetValue(entity, colVal);
             }
         }
 
@@ -712,18 +759,22 @@ namespace ypcBase
             var dbRecords = Db.Set<TEntity>()
                 .Where(
                     CreateUpdateWhereExpression(
-                        JsonConvert.DeserializeObject<Dictionary<string, object>>(json, _jsonSettingDepth1)
-                            .Where(l => l.Value != null).ToDictionary(l => l.Key, l => l.Value)
+                        // JsonConvert.DeserializeObject<Dictionary<string, object?>>(json, _jsonSettingDepth1)!
+                        // JsonSerializer.Deserialize<Dictionary<string, object?>>(json, _jsonSettingDepth1)!
+                        // GetFlatObject<Dictionary<string,  object>>(json)
+                        //     .Where(l => l.Value != null).ToDictionary(l => l.Key, l => l.Value)
+                        GetFlatObject<Dictionary<string, JsonElement>>(json)
+                            .Where(l => l.Value.ValueKind != JsonValueKind.Null).ToDictionary(l => l.Key, l => l.Value)
                     )
                 ).ToArray();
             if (dbRecords.Length > 1)
             {
-                throw new Exception("有多笔数据");
+                throw new Exception(LangLocale.TooManyRows);
             }
 
             if (dbRecords.Length == 0)
             {
-                throw new Exception("无此记录或已变更");
+                throw new Exception(LangLocale.NoRecords);
             }
 
             return dbRecords[0];
@@ -736,7 +787,7 @@ namespace ypcBase
         /// <param name="oldDto">旧数据</param>
         private void CheckOldRecord(TEntity dbEntity, TDto oldDto)
         {
-            TDto newDto;
+            TDto? newDto;
 
             if (CustomerSelect == null)
             {
@@ -767,58 +818,56 @@ namespace ypcBase
                 if (!Equals(oldVal, newVal))
                 {
                     //throw new Exception($"数据已变更{key},{oldVal},{newVal}");
-                    throw new Exception("数据已变更");
+                    throw new Exception(LangLocale.RecordChanged);
                 }
             }
         }
 
-        private KaTableSearchResponse<TEntity> GetRecordsByFile(KaTableImportCol[] cols, HttpPostedFile file)
+        private KaTableSearchResponse<TEntity> GetRecordsByFile(KaTableImportCol[] cols, IFormFile file)
         {
-            //ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-            using (ExcelPackage package = new ExcelPackage(file.InputStream))
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+            using ExcelPackage package = new ExcelPackage(file.OpenReadStream());
+            var sheet = package.Workbook.Worksheets[0];
+
+            // var dtoType = typeof(TDto);
+            for (var i = 0; i < cols.Length; i++)
             {
-                var sheet = package.Workbook.Worksheets[0];
-
-                // var dtoType = typeof(TDto);
-                for (var i = 0; i < cols.Length; i++)
+                var col = cols[i];
+                if (!string.IsNullOrEmpty(col.Title))
                 {
-                    var col = cols[i];
-                    if (!string.IsNullOrEmpty(col.Title))
+                    if (!string.Equals(sheet.Cells[1, i + 1].Value?.ToString(), col.Title,
+                            StringComparison.CurrentCultureIgnoreCase))
                     {
-                        if (!string.Equals(sheet.Cells[1, i + 1].Value?.ToString(), col.Title,
-                                StringComparison.CurrentCultureIgnoreCase))
-                        {
-                            throw new Exception($"Excel第{i + 1}列标题不是【{col.Title}】");
-                        }
+                        throw new Exception(string.Format(LangLocale.ExcelTitle, i + 1, col.Title));
                     }
-
-                    // if (dtoType.GetProperty(col.Key) == null)
-                    // {
-                    //     throw new Exception($"无此列");
-                    // }
                 }
 
-                IList<TEntity> result = new List<TEntity>();
-                var rowIndex = 2;
-                while (true)
-                {
-                    if (sheet.Cells[rowIndex, 1].Value == null) break;
-
-                    var dic = new Dictionary<string, object>();
-                    for (var colIndex = 0; colIndex < cols.Length; colIndex++)
-                    {
-                        var col = cols[colIndex];
-                        dic.Add(col.Key, sheet.Cells[rowIndex, colIndex + 1].Value);
-                    }
-
-                    CreateObject(dic, out var obj);
-                    result.Add(obj);
-
-                    rowIndex++;
-                }
-
-                return new KaTableSearchResponse<TEntity> { IsSuccess = true, Records = result, Total = result.Count };
+                // if (dtoType.GetProperty(col.Key) == null)
+                // {
+                //     throw new Exception($"无此列");
+                // }
             }
+
+            IList<TEntity> result = new List<TEntity>();
+            var rowIndex = 2;
+            while (true)
+            {
+                if (sheet.Cells[rowIndex, 1].Value == null) break;
+
+                var dic = new Dictionary<string, object>();
+                for (var colIndex = 0; colIndex < cols.Length; colIndex++)
+                {
+                    var col = cols[colIndex];
+                    dic.Add(col.Key, sheet.Cells[rowIndex, colIndex + 1].Value);
+                }
+
+                CreateObject(dic, out var obj);
+                result.Add(obj);
+
+                rowIndex++;
+            }
+
+            return new KaTableSearchResponse<TEntity> { IsSuccess = true, Records = result, Total = result.Count };
         }
 
         private void ImportRecord(TEntity[] entities)
@@ -850,14 +899,14 @@ namespace ypcBase
             var ordLamb = Expression.Lambda(member, table);
 
             return Expression.Call(typeof(Queryable), ordMthStr,
-                new[] { typeof(TEntity), ((PropertyInfo)member.Member).PropertyType }, oldExp, ordLamb);
+                [typeof(TEntity), ((PropertyInfo)member.Member).PropertyType], oldExp, ordLamb);
         }
 
-        private Expression<Func<TEntity, bool>> CreateUpdateWhereExpression(Dictionary<string, object> record)
+        private Expression<Func<TEntity, bool>> CreateUpdateWhereExpression(Dictionary<string, JsonElement> record)
         {
             var table = Expression.Parameter(typeof(TEntity), "t");
 
-            Expression exp = null;
+            Expression? exp = null;
             var index = 0;
 
             foreach (var col in record)
@@ -866,8 +915,11 @@ namespace ypcBase
                 var property = CreateExpressionProperty(col.Key, table);
                 if (property == null) continue;
                 var propertyTypeRaw = ((PropertyInfo)property.Member).PropertyType;
+
+                var colVal = GetJsonElementValue(col.Value, propertyTypeRaw);
+
                 var propExpression = Expression.Equal(property,
-                    Expression.Convert(Expression.Constant(col.Value), propertyTypeRaw));
+                    Expression.Convert(Expression.Constant(colVal), propertyTypeRaw));
 
                 if (++index == 1)
                 {
@@ -886,7 +938,7 @@ namespace ypcBase
         {
             var table = Expression.Parameter(typeof(TEntity), "t");
 
-            Expression exp = null;
+            Expression? exp = null;
             var index = 0;
 
             foreach (var condition in conditions)
@@ -919,12 +971,12 @@ namespace ypcBase
 
             if (string.IsNullOrEmpty(condition.Key))
             {
-                throw new ArgumentException("Key不能为空", condition.Key);
+                throw new ArgumentException("System:Key不能为空", condition.Key);
             }
 
             if (string.IsNullOrEmpty(condition.Opt))
             {
-                throw new ArgumentException("Opt不能为空", condition.Opt);
+                throw new ArgumentException("System:Opt不能为空", condition.Opt);
             }
 
             // var table = Expression.Parameter(typeof(TEntity), "t");
@@ -936,37 +988,40 @@ namespace ypcBase
             //     ? typeof(Nullable<>).MakeGenericType(propertyTypeRaw)
             //     : propertyTypeRaw;
             var propertyType = propertyTypeRaw;
+
+            var conditionVal = GetJsonElementValue(condition.Val, propertyType);
+
             switch (condition.Opt)
             {
                 case "eq":
                     return Expression.Equal(property,
-                        Expression.Convert(Expression.Constant(condition.Val), propertyType));
+                        Expression.Convert(Expression.Constant(conditionVal), propertyType));
                 case "gt":
                     return Expression.GreaterThan(property,
-                        Expression.Convert(Expression.Constant(condition.Val), propertyType));
+                        Expression.Convert(Expression.Constant(conditionVal), propertyType));
                 case "gte":
                     return Expression.GreaterThanOrEqual(property,
-                        Expression.Convert(Expression.Constant(condition.Val), propertyType));
+                        Expression.Convert(Expression.Constant(conditionVal), propertyType));
                 case "lt":
                     return Expression.LessThan(property,
-                        Expression.Convert(Expression.Constant(condition.Val), propertyType));
+                        Expression.Convert(Expression.Constant(conditionVal), propertyType));
                 case "lte":
                     return Expression.LessThanOrEqual(property,
-                        Expression.Convert(Expression.Constant(condition.Val), propertyType));
+                        Expression.Convert(Expression.Constant(conditionVal), propertyType));
                 case "neq":
                     return Expression.NotEqual(property,
-                        Expression.Convert(Expression.Constant(condition.Val), propertyType));
+                        Expression.Convert(Expression.Constant(conditionVal), propertyType));
                 case "beg":
                     return Expression.Call(property, "StartsWith", null,
-                        Expression.Convert(Expression.Constant(condition.Val), propertyType));
+                        Expression.Convert(Expression.Constant(conditionVal), propertyType));
                 case "end":
                     return Expression.Call(property, "EndsWith", null,
-                        Expression.Convert(Expression.Constant(condition.Val), propertyType));
+                        Expression.Convert(Expression.Constant(conditionVal), propertyType));
                 case "like":
                     return Expression.Call(property, "Contains", null,
-                        Expression.Convert(Expression.Constant(condition.Val), propertyType));
+                        Expression.Convert(Expression.Constant(conditionVal), propertyType));
                 case "in":
-                    return Expression.Call(_containsMethod, Expression.Constant(condition.Val), property);
+                    return Expression.Call(_containsMethod, Expression.Constant(conditionVal), property);
                 case "nu":
                     if (IsNullable(propertyType))
                     {
@@ -982,15 +1037,15 @@ namespace ypcBase
 
                     return Expression.Constant(true);
                 default:
-                    throw new ArgumentException("无此条件符号", condition.Opt);
+                    throw new ArgumentException("System:无此条件符号", condition.Opt);
             }
         }
 
         private Expression CreateWhereSubGroupExpression(KaTableWhereCondition condition, ParameterExpression table)
         {
-            Expression exp = null;
+            Expression? exp = null;
 
-            foreach (var conditionChild in condition.Children)
+            foreach (var conditionChild in condition.Children!)
             {
                 var childExp = CreateWhereSubExpression(conditionChild, table);
                 if (exp == null)
@@ -1004,10 +1059,10 @@ namespace ypcBase
                     : Expression.OrElse(exp, childExp);
             }
 
-            return exp;
+            return exp!;
         }
 
-        private MemberExpression CreateExpressionProperty(string propertyName, Expression par)
+        private MemberExpression? CreateExpressionProperty(string propertyName, Expression par)
         {
             if (string.IsNullOrEmpty(propertyName))
                 throw new ArgumentNullException(nameof(propertyName));
@@ -1028,7 +1083,8 @@ namespace ypcBase
             }
         }
 
-        private PropertyInfo GetProperty(Type type, string propName)
+/*
+        private PropertyInfo? GetProperty(Type type, string propName)
         {
             var props = propName.Split('.').Select(ToCamel).ToArray();
             var len = props.Length;
@@ -1045,6 +1101,7 @@ namespace ypcBase
 
             return null;
         }
+*/
 
         private object GetPropertyValue(object obj, string propName)
         {
@@ -1055,15 +1112,15 @@ namespace ypcBase
             for (var i = 0; i < len; i++)
             {
                 var p = type.GetProperty(props[i]);
-                if (p == null) throw new Exception($"无此属性({propName})");
+                if (p == null) throw new Exception($"System:无此属性({propName})");
 
                 type = p.PropertyType;
-                obj = p.GetValue(obj);
+                obj = p.GetValue(obj)!;
 
                 if (i == len - 1) return obj;
             }
 
-            throw new Exception($"无此属性({propName})");
+            throw new Exception($"System:无此属性({propName})");
         }
 
         /// <summary>
@@ -1089,15 +1146,17 @@ namespace ypcBase
                 var prop = type.GetProperty(keyArr[0]);
                 if (prop == null)
                 {
-                    throw new Exception($"无此属性{keyArr[0]}");
+                    throw new Exception($"System:无此属性{keyArr[0]}");
                 }
 
                 // var valType = col.Value.GetType();
-                var valStr = $"\"{col.Value}\"";
+               //var valStr = $"\"{col.Value}\"";
+				var valStr = JsonSerializer.Serialize(col.Value);
 
                 if (keyArr.Length == 1)
                 {
-                    prop.SetValue(surface, JsonConvert.DeserializeObject(valStr, prop.PropertyType, _jsonSetting));
+                    // prop.SetValue(surface, JsonConvert.DeserializeObject(valStr, prop.PropertyType, _jsonSetting));
+                    prop.SetValue(surface, JsonSerializer.Deserialize(valStr, prop.PropertyType, _jsonSetting));
                 }
                 else
                 {
@@ -1105,10 +1164,10 @@ namespace ypcBase
                     {
                         for (var i = 0; i < keyArr.Length; i++)
                         {
-                            prop = obj.GetType().GetProperty(keyArr[i]);
+                            prop = obj!.GetType().GetProperty(keyArr[i]);
                             if (prop == null)
                             {
-                                throw new Exception($"无此属性{keyArr[i]}");
+                                throw new Exception($"System:无此属性{keyArr[i]}");
                             }
 
                             if (i == keyArr.Length - 1)
@@ -1124,7 +1183,7 @@ namespace ypcBase
                             }
 
                             var propObj = Activator.CreateInstance(prop.PropertyType);
-                            created.Add(createdKey, propObj);
+                            created.Add(createdKey, propObj!);
                             prop.SetValue(obj, propObj);
                             obj = propObj;
                         }
@@ -1133,14 +1192,15 @@ namespace ypcBase
 
                 if (!isJustSurface)
                 {
-                    prop.SetValue(obj, JsonConvert.DeserializeObject(valStr, prop.PropertyType, _jsonSetting));
+                    // prop.SetValue(obj, JsonConvert.DeserializeObject(valStr, prop.PropertyType, _jsonSetting));
+                    prop.SetValue(obj, JsonSerializer.Deserialize(valStr, prop.PropertyType, _jsonSetting));
                 }
 
                 // prop.SetValue(obj, valType == prop.PropertyType ? col.Value : (col.Value == null ? null : Convert.ChangeType(col.Value,prop.PropertyType)));
             }
 
-            surfaceEntity = (TEntity)surface;
-            return (TDto)instance;
+            surfaceEntity = (TEntity)surface!;
+            return (TDto)instance!;
         }
 
         private TTo Mapper<TFrom, TTo>(TFrom fromObj)
@@ -1188,7 +1248,7 @@ namespace ypcBase
                 }
             }
 
-            return (TTo)toObj;
+            return (TTo)toObj!;
         }
 
         #endregion
@@ -1205,6 +1265,65 @@ namespace ypcBase
         {
             return $"{char.ToUpper(str[0])}{str.Substring(1)}";
         }
+
+        private T GetFlatObject<T>(string json, JsonSerializerOptions? options = null)
+        {
+            options ??= _jsonSettingDepth1;
+            var entity =
+                JsonSerializer.Deserialize<object>(json, options);
+            var str = JsonSerializer.Serialize(entity);
+            return JsonSerializer.Deserialize<T>(str, _jsonDesSetting)!;
+        }
+
+        private static object? GetJsonElementValue(JsonElement element, Type type)
+        {
+            // return type switch
+            // {
+            //     not null when type == typeof(int) || type == typeof(int?) => element.GetInt32(),
+            //     not null when type == typeof(uint) || type == typeof(uint?) => element.GetUInt32(),
+            //     not null when type == typeof(long) || type == typeof(long?) => element.GetInt64(),
+            //     not null when type == typeof(ulong) || type == typeof(ulong?) => element.GetUInt64(),
+            //     not null when type == typeof(short) || type == typeof(short) => element.GetInt16(),
+            //     not null when type == typeof(ushort) || type == typeof(ushort) => element.GetUInt16(),
+            //     not null when type == typeof(byte) || type == typeof(byte) => element.GetByte(),
+            //     not null when type == typeof(float) || type == typeof(float) => element.GetSingle(),
+            //     not null when type == typeof(double) || type == typeof(double) => element.GetDouble(),
+            //     not null when type == typeof(decimal) || type == typeof(decimal?) => element.GetDecimal(),
+            //     not null when type == typeof(bool) || type == typeof(bool?) => element.GetBoolean(),
+            //     not null when type == typeof(string) => element.GetString(),
+            //     not null when type == typeof(DateTime) || type == typeof(DateTime?) => element.GetDateTime(),
+            //     _ => null
+            // };
+
+            
+            return element.ValueKind switch
+            {
+                JsonValueKind.String => type switch
+                {
+                    not null when type == typeof(DateTime) || type == typeof(DateTime?) => element.GetDateTime(),
+                    not null when type == typeof(string) => element.GetString(),
+                    null => null,
+                },
+                JsonValueKind.Number => type switch
+                {
+                    not null when type == typeof(int) || type == typeof(int?) => element.GetInt32(),
+                    not null when type == typeof(uint) || type == typeof(uint?) => element.GetUInt32(),
+                    not null when type == typeof(long) || type == typeof(long?) => element.GetInt64(),
+                    not null when type == typeof(ulong) || type == typeof(ulong?) => element.GetUInt64(),
+                    not null when type == typeof(short) || type == typeof(short?) => element.GetInt16(),
+                    not null when type == typeof(ushort) || type == typeof(ushort?) => element.GetUInt16(),
+                    not null when type == typeof(byte) || type == typeof(byte?) => element.GetByte(),
+                    not null when type == typeof(float) || type == typeof(float?) => element.GetSingle(),
+                    not null when type == typeof(double) || type == typeof(double?) => element.GetDouble(),
+                    not null when type == typeof(decimal) || type == typeof(decimal?) => element.GetDecimal(),
+                    null => null,
+                },
+                JsonValueKind.True => true,
+                JsonValueKind.False => false,
+                JsonValueKind.Null => null,
+                _ => null
+            };
+        }
     }
 
 
@@ -1212,21 +1331,21 @@ namespace ypcBase
     {
         public int PageSize { get; set; }
         public int PageNum { get; set; }
-        public KaTableSortCondition[] SortConditions { get; set; }
-        public KaTableWhereCondition[] WhereConditions { get; set; }
-        public KaTableSearchSummary[] SummaryConditions { get; set; }
+        public KaTableSortCondition[] SortConditions { get; set; } = null!;
+        public KaTableWhereCondition[] WhereConditions { get; set; } = null!;
+        public KaTableSearchSummary[] SummaryConditions { get; set; } = null!;
     }
 
     public class KaTableExportParameter : KaTableSearchParameter
     {
-        public KaTableExportCondition[] Cols { get; set; }
-        public string FileName { get; set; }
+        public KaTableExportCondition[] Cols { get; set; } = null!;
+        public string FileName { get; set; } = null!;
     }
 
     public class KaTableImportCol
     {
-        public string Key { get; set; }
-        public string Title { get; set; }
+        public string Key { get; set; } = null!;
+        public string Title { get; set; } = null!;
     }
 
     public class KaTableResponse
@@ -1239,7 +1358,7 @@ namespace ypcBase
         /// <summary>
         /// 異常信息
         /// </summary>
-        public string Message { get; set; }
+        public string Message { get; set; } = null!;
     }
 
     public class KaTableResponseRecord<T> : KaTableResponse
@@ -1249,36 +1368,36 @@ namespace ypcBase
 
     public class KaTableResponseRecords<T> : KaTableResponse
     {
-        public IList<T> Records { get; set; }
+        public IList<T> Records { get; set; } = null!;
     }
 
     public class KaTableSearchResponse<T> : KaTableResponseRecords<T>
     {
         public int Total { get; set; }
-        public object Summary { get; set; }
+        public object? Summary { get; set; }
     }
 
 
     public class KaTableSortCondition
     {
-        public string Key { get; set; }
-        public string Order { get; set; }
+        public string Key { get; set; } = null!;
+        public string Order { get; set; } = null!;
     }
 
     public class KaTableWhereCondition
     {
-        public string Key { get; set; }
-        public string Opt { get; set; }
-        public object Val { get; set; }
-        public string Bool { get; set; }
-        public KaTableWhereCondition[] Children { get; set; }
+        public string Key { get; set; } = null!;
+        public string Opt { get; set; } = null!;
+        public JsonElement Val { get; set; }
+        public string Bool { get; set; } = null!;
+        public KaTableWhereCondition[]? Children { get; set; }
     }
 
     public class KaTableExportCondition
     {
-        public string Key { get; set; }
-        public string Title { get; set; }
-        public string DateFormat { get; set; }
+        public string Key { get; set; } = null!;
+        public string Title { get; set; } = null!;
+        public string? DateFormat { get; set; }
 
         /** $row$, $col$ */
         public string Formula { get; set; }
@@ -1296,5 +1415,13 @@ namespace ypcBase
     {
         public string Key { get; set; }
         public string Summary { get; set; }
+    }
+
+    public record Lang
+    {
+        public required string TooManyRows { get; init; }
+        public required string NoRecords { get; init; }
+        public required string RecordChanged { get; init; }
+        public required string ExcelTitle { get; init; }
     }
 }
