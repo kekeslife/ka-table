@@ -4,6 +4,34 @@
 
 需要把and-design-vue重新打包esm.js文件。
 
+≈4.2.6版本 修改antd-tools\getWebpackConfig.js
+
+```javascript
+config.externals = [
+  {
+    vue: {
+      root: 'Vue',
+      commonjs2: 'vue',
+      commonjs: 'vue',
+      amd: 'vue',
+      module: 'vue',
+    },
+  },
+    // 添加dayjs
+  {
+    dayjs: {
+      root: 'dayjs',
+      commonjs2: 'dayjs',
+      commonjs: 'dayjs',
+      amd: 'dayjs',
+      module: 'dayjs',
+    },
+  },
+];
+```
+
+
+
 
 
 ## 中文问题
