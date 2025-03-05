@@ -1,5 +1,11 @@
 # 传统页面使用esm方式的问题
 
+## dayjs问题
+
+需要把and-design-vue重新打包esm.js文件。
+
+
+
 ## 中文问题
 
 ant-design-vue和dayjs，使用esm方式引用的话，对中文支持度不好，需要对这两个库单独打包

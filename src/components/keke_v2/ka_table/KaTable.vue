@@ -282,7 +282,7 @@ if ((app?.proxy as any).$axios) {
 //  #region 普通
 /** props */
 const props = defineProps(kaTableProps());
-const slots = defineSlots()
+const slots = defineSlots();
 
 /** 样式 */
 const { useToken } = theme;
@@ -492,12 +492,16 @@ const rowEvent = (_preRecord: KaTableRowRecord, index: number | undefined) => {
 	return {
 		onclick: async (_event: MouseEvent) => {
 			dataSource.activeIndex = index!;
-			if (!(await eventHandle(props.onAfterRowClick))) return;
+			if (props.onAfterRowClick) {
+				if (!(await eventHandle(props.onAfterRowClick))) return;
+			}
 			// console.log('customRow onClick', index);
 		},
 		onDblclick: async (_event: MouseEvent) => {
 			dataSource.activeIndex = index!;
-			if (!(await eventHandle(props.onAfterRowDbClick))) return;
+			if (props.onAfterRowDbClick) {
+				if (!(await eventHandle(props.onAfterRowDbClick))) return;
+			}
 			// console.log('customRow onClick', index);
 		},
 	};
@@ -579,14 +583,18 @@ const onAntTableChange: TableProps['onChange'] = async (page, filters, sorters, 
 
 		// 分页
 		if (extra.action === 'paginate') {
-			if (!(await eventHandle(props.onPrePage))) return;
+			if (props.onPrePage) {
+				if (!(await eventHandle(props.onPrePage))) return;
+			}
 		}
 
 		await loadData();
 
 		// 分页
 		if (extra.action === 'paginate') {
-			if (!(await eventHandle(props.onPostPage))) return;
+			if (props.onPostPage) {
+				if (!(await eventHandle(props.onPostPage))) return;
+			}
 		}
 	} catch (e: any) {
 		showError(e);
@@ -599,11 +607,15 @@ const onToolbarRefresh = async () => {
 	loading.list = true;
 
 	try {
-		if (!(await eventHandle(props.onBeforeRefresh))) return;
+		if (props.onBeforeRefresh) {
+			if (!(await eventHandle(props.onBeforeRefresh))) return;
+		}
 
 		await loadData();
 
-		if (!(await eventHandle(props.onPostRefresh))) return;
+		if (props.onPostRefresh) {
+			if (!(await eventHandle(props.onPostRefresh))) return;
+		}
 	} catch (e: any) {
 		showError(e);
 	} finally {
@@ -675,7 +687,9 @@ const loadData = async () => {
 		pagination.total = data.total || 0;
 		dataSource.activeIndex = null;
 
-		await eventHandle(props.onPostLoadData);
+		if (props.onPostLoadData) {
+			await eventHandle(props.onPostLoadData);
+		}
 	} catch (error: any) {
 		dataSource.records = [];
 		pagination.total = 0;
@@ -725,13 +739,17 @@ const onToolbarSort = async () => {
 	loading.draw = true;
 
 	try {
-		if (!(await eventHandle(props.onBeforeSort))) return;
+		if (props.onBeforeSort) {
+			if (!(await eventHandle(props.onBeforeSort))) return;
+		}
 
 		$sorter.value?.setSorter(sorterConditions);
 
 		tableStatus.value = 'Sort';
 
-		if (!(await eventHandle(props.onAfterSort))) return;
+		if (props.onAfterSort) {
+			if (!(await eventHandle(props.onAfterSort))) return;
+		}
 	} catch (e: any) {
 		showError(e);
 	} finally {
@@ -746,13 +764,17 @@ const sortSubmit = async () => {
 	loading.draw = true;
 
 	try {
-		if (!(await eventHandle(props.onPreSort))) return;
+		if (props.onPreSort) {
+			if (!(await eventHandle(props.onPreSort))) return;
+		}
 
 		const conditions = $sorter.value?.getSorter();
 		setSorters(conditions!);
 		await loadData();
 
-		if (!(await eventHandle(props.onPostSort))) return;
+		if (props.onPostSort) {
+			if (!(await eventHandle(props.onPostSort))) return;
+		}
 
 		tableStatus.value = 'List';
 	} catch (error: any) {
@@ -763,7 +785,7 @@ const sortSubmit = async () => {
 };
 /** 设置排序值 */
 const setSorters = (conditions: KaSorterCondition[]) => {
-	const allConditions:KaSorterCondition[] = [];
+	const allConditions: KaSorterCondition[] = [];
 	for (const key in sorterObj.value) {
 		const condition = conditions.find(item => item.key === key);
 		if (condition) {
@@ -849,13 +871,17 @@ const onToolbarFilter = async () => {
 	loading.draw = true;
 
 	try {
-		if (!(await eventHandle(props.onBeforeFilter))) return;
+		if (props.onBeforeFilter) {
+			if (!(await eventHandle(props.onBeforeFilter))) return;
+		}
 
 		$filter.value?.setConditions(filterConditions);
 
 		tableStatus.value = 'Filter';
 
-		if (!(await eventHandle(props.onAfterFilter))) return;
+		if (props.onAfterFilter) {
+			if (!(await eventHandle(props.onAfterFilter))) return;
+		}
 	} catch (e) {
 		showError(e);
 	} finally {
@@ -870,12 +896,16 @@ const filterSubmit = async () => {
 	// isAntFilter = false;
 
 	try {
-		if (!(await eventHandle(props.onPreFilter))) return;
+		if (props.onPreFilter) {
+			if (!(await eventHandle(props.onPreFilter))) return;
+		}
 
 		setFilters($filter.value?.getConditions() || [], false);
 		await loadData();
 
-		if (!(await eventHandle(props.onPostFilter))) return;
+		if (props.onPostFilter) {
+			if (!(await eventHandle(props.onPostFilter))) return;
+		}
 
 		tableStatus.value = 'List';
 	} catch (error: any) {
@@ -932,12 +962,16 @@ const onToolbarEdit = async () => {
 			throw props.language.selectRow;
 		}
 
-		if (!(await eventHandle(props.onBeforeEdit))) return;
+		if (props.onBeforeEdit) {
+			if (!(await eventHandle(props.onBeforeEdit))) return;
+		}
 
 		setEditorItems();
 		tableStatus.value = 'Edit';
 
-		if (!(await eventHandle(props.onAfterEdit))) return;
+		if (props.onAfterEdit) {
+			if (!(await eventHandle(props.onAfterEdit))) return;
+		}
 	} catch (e: any) {
 		showError(e);
 	} finally {
@@ -953,12 +987,16 @@ const onToolbarAdd = async () => {
 	loading.draw = true;
 
 	try {
-		if (!(await eventHandle(props.onBeforeAdd))) return;
+		if (props.onBeforeAdd) {
+			if (!(await eventHandle(props.onBeforeAdd))) return;
+		}
 
 		$form.value?.clearEditor();
 		tableStatus.value = 'Add';
 
-		if (!(await eventHandle(props.onAfterAdd))) return;
+		if (props.onAfterAdd) {
+			if (!(await eventHandle(props.onAfterAdd))) return;
+		}
 	} catch (e: any) {
 		showError(e);
 	} finally {
@@ -980,13 +1018,21 @@ const addSubmit = async () => {
 		});
 		editorVals = $form.value?.getEditorVal();
 
-		if (!(await eventHandle(props.onPreAddOrEdit))) return;
-		if (!(await eventHandle(props.onPreAdd))) return;
+		if (props.onPreAddOrEdit) {
+			if (!(await eventHandle(props.onPreAddOrEdit))) return;
+		}
+		if (props.onPreAdd) {
+			if (!(await eventHandle(props.onPreAdd))) return;
+		}
 
 		const newData = await insertData();
 
-		if (!(await eventHandle(props.onPostAddOrEdit, newData))) return;
-		if (!(await eventHandle(props.onPostAdd, newData))) return;
+		if (props.onPostAddOrEdit) {
+			if (!(await eventHandle(props.onPostAddOrEdit, newData))) return;
+		}
+		if (props.onPostAdd) {
+			if (!(await eventHandle(props.onPostAdd, newData))) return;
+		}
 
 		showAlert(props.language.addSuccess);
 		tableStatus.value = 'List';
@@ -1012,14 +1058,24 @@ const editSubmit = async () => {
 		});
 		editorVals = $form.value?.getEditorVal();
 
-		if (!(await eventHandle(props.onPreAddOrEdit))) return;
-		if (!(await eventHandle(props.onPreEdit))) return;
-		if (!(await eventHandle(props.onPreEditOrRemove))) return;
+		if (props.onPreAddOrEdit) {
+			if (!(await eventHandle(props.onPreAddOrEdit))) return;
+		}
+		if (props.onPreEdit) {
+			if (!(await eventHandle(props.onPreEdit))) return;
+		}
+		if (props.onPreEditOrRemove) {
+			if (!(await eventHandle(props.onPreEditOrRemove))) return;
+		}
 
 		const newData = await updateData();
 
-		if (!(await eventHandle(props.onPostAddOrEdit, newData))) return;
-		if (!(await eventHandle(props.onPostEdit, newData))) return;
+		if (props.onPostAddOrEdit) {
+			if (!(await eventHandle(props.onPostAddOrEdit, newData))) return;
+		}
+		if (props.onPostEdit) {
+			if (!(await eventHandle(props.onPostEdit, newData))) return;
+		}
 
 		showAlert(props.language.editSuccess);
 		tableStatus.value = 'List';
@@ -1090,13 +1146,19 @@ const onToolbarRemove = async () => {
 			throw props.language.selectRow;
 		}
 
-		if (!(await eventHandle(props.onPreRemove))) return;
-		if (!(await eventHandle(props.onPreEditOrRemove))) return;
+		if (props.onPreRemove) {
+			if (!(await eventHandle(props.onPreRemove))) return;
+		}
+		if (props.onPreEditOrRemove) {
+			if (!(await eventHandle(props.onPreEditOrRemove))) return;
+		}
 
 		tableStatus.value = 'Remove';
 		await removeData();
 
-		if (!(await eventHandle(props.onPostRemove))) return;
+		if (props.onPostRemove) {
+			if (!(await eventHandle(props.onPostRemove))) return;
+		}
 
 		showAlert(props.language.removeSuccess);
 		tableStatus.value = 'List';
@@ -1132,11 +1194,21 @@ const onToolbarExport = async (isAll: boolean) => {
 	loading.list = true;
 
 	try {
-		if (!(await eventHandle(props.onBeforeExport))) return;
+		if (props.onBeforeExport) {
+			if (!(await eventHandle(props.onBeforeExport))) return;
+		}
+		if (props.onPreExport) {
+			if (!(await eventHandle(props.onPreExport))) return;
+		}
 
 		await exportData(isAll);
 
-		if (!(await eventHandle(props.onAfterExport))) return;
+		if (props.onAfterExport) {
+			if (!(await eventHandle(props.onAfterExport))) return;
+		}
+		if (props.onPostExport) {
+			if (!(await eventHandle(props.onPostExport))) return;
+		}
 	} catch (e) {
 		showError(e);
 	} finally {
@@ -1145,7 +1217,7 @@ const onToolbarExport = async (isAll: boolean) => {
 	}
 };
 const exportData = async (isAll: boolean) => {
-	await eventHandle(props.onPreExport);
+	// await eventHandle(props.onPreExport);
 
 	const _sorterConditions = sorterConditions.filter(item => item.order != null);
 	const fileName = `${props.tableTitle}(${dayjs().format('YYYYMMDDHHmmss')})`;
@@ -1180,7 +1252,7 @@ const exportData = async (isAll: boolean) => {
 	//$export.setAttribute('download', `考勤-${dayjs().format('MMDDHHmmss')}.xlsx`);
 	$export.value.click();
 
-	await eventHandle(props.onPostExport);
+	// await eventHandle(props.onPostExport);
 };
 //  #endregion 导出
 
@@ -1220,11 +1292,15 @@ const importSubmit = async () => {
 	props.isDebug && console.groupCollapsed('importSubmit');
 	loading.draw = true;
 	try {
-		if (!(await eventHandle(props.onPreImport, importRecords.value))) return;
+		if (props.onPreImport) {
+			if (!(await eventHandle(props.onPreImport, importRecords.value))) return;
+		}
 
 		await importData();
 
-		if (!(await eventHandle(props.onPostImport, importRecords.value))) return;
+		if (props.onPostImport) {
+			if (!(await eventHandle(props.onPostImport, importRecords.value))) return;
+		}
 
 		showAlert(props.language.importSuccess);
 		tableStatus.value = 'List';
