@@ -9,6 +9,7 @@
 			show-search
 			allow-clear
 			class="ka-input"
+			:filter-option="false"
 		/>
 	</a-config-provider>
 </template>
