@@ -197,7 +197,7 @@ export type KaTableCol = {
  * }
  */
 export type KaTableCols = {
-	[key: string]: KaTableCol | { [key: string]: KaTableCol };
+	[key: string]: KaTableCol | KaTableCols;
 };
 
 /** 数据源 */

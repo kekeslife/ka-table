@@ -62,7 +62,7 @@ const components = {
 };
 
 const onSearchDebounce = debounce((searchKey: string) => {
-	console.log('onSearchDebounce');
+	// console.log('onSearchDebounce');
 	if (!searchKey) return;
 	emit('search', searchKey);
 }, props.debounceDelay);
