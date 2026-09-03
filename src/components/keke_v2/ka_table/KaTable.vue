@@ -157,6 +157,7 @@
 			:title="drawTitle"
 			:open="isDrawOpen"
 			:width="drawWidth"
+			:class="props.drawClass"
 			@close="onDrawCancel"
 			class="ka-table-drawer"
 			:closable="!loading.draw"

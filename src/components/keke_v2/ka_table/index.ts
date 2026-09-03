@@ -1,7 +1,7 @@
 import { SizeType } from 'ant-design-vue/es/config-provider';
 import { Rule } from 'ant-design-vue/es/form/interface';
 import { ColumnType, SortOrder } from 'ant-design-vue/es/table/interface';
-import { PropType } from 'vue';
+import { PropType  } from 'vue';
 import { KaEditorItem, KaEditorItemOption } from '../ka_editor';
 import { SelectProps, TableColumnProps,TableProps } from 'ant-design-vue';
 import { KaSorterCondition } from '../ka_sorter';
@@ -332,6 +332,8 @@ export const kaTableProps = () => ({
 	refreshTitle: { type: String, default: '' },
 	/** 抽屉窗口宽度 */
 	drawWidth: { type: [Number, String], default: 720 },
+	/** 抽屉类名 */
+	drawClass: {type:String,default:''},
 	/** 抽屉提交按钮文字 */
 	drawSubmitTitle: { type: String, default: '' },
 	/** 抽屉清空按钮文字 */
