@@ -2,19 +2,7 @@
 	<a-config-provider
 		:component-size="props.size"
 		:locale="props.locale"
-		:theme="
-			props.theme
-				? {
-						token: {
-							colorPrimary: props.theme,
-							colorBorderSecondary: props.theme,
-							colorFillAlter: colsColor,
-							colorFillSecondary: colsColor,
-							colorBgContainerDisabled: '#F0F0F0',
-						},
-				  }
-				: {}
-		"
+		:theme="mergedTheme"
 	>
 		<a-table
 			class="ka-table"
@@ -236,7 +224,7 @@ import {
 	KaTableImportFileResponse,
 	KaTableResponseRecord,
 } from '.';
-import { Ref, getCurrentInstance, onBeforeMount, onMounted, reactive, ref, watch } from 'vue';
+import { Ref, computed, getCurrentInstance, onBeforeMount, onMounted, reactive, ref, watch } from 'vue';
 import { PaginationConfig } from 'ant-design-vue/es/pagination';
 import { ColumnType, FilterValue, SorterResult } from 'ant-design-vue/es/table/interface';
 import { KaFilterCol, KaFilterCondition } from '../ka_filter';
@@ -295,6 +283,20 @@ const titleColor = props.theme || token.value.colorFillAlter;
 const borderColor = props.theme || token.value.colorBorderSecondary;
 const borderRadius = token.value.borderRadiusLG + 'px';
 const tdPadding = token.value.paddingXS + 'px';
+
+const mergedTheme = computed(() => {
+  if (!props.theme) return {};
+  
+  return {
+    token: {
+		colorPrimary: props.theme,
+		colorBorderSecondary: props.theme,
+		colorFillAlter: colsColor,
+		colorFillSecondary: colsColor,
+		colorBgContainerDisabled: '#F0F0F0',
+	}
+  };
+});
 
 /** 加载状态 */
 const loading = reactive({
@@ -480,6 +482,8 @@ defineExpose({
 	getData: () => {
 		return dataSource;
 	},
+	showLoading:(type:keyof typeof loading)=>loading[type] = true,
+	hideLoading:(type:keyof typeof loading)=>loading[type] = false,
 });
 // #endregion watch
 
@@ -1579,6 +1583,10 @@ onMounted(async () => {
 	border-top: 0;
 	border-radius: 0 0 v-bind(borderRadius) v-bind(borderRadius);
 	background-color: v-bind(colsColor);
+}
+
+.ka-table :deep(.ant-table-container){
+	overflow: auto;
 }
 
 :global(.ka-table-drawer .edit-item-inline-block) {
