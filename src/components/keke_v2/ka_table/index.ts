@@ -179,6 +179,8 @@ export type KaTableCol = {
 		debounceDelay?: KaEditorItem['debounceDelay'];
 		/** 小数精度 */
 		precision?: number;
+		/** ant select filterOption */
+		filterOption?: SelectProps['filterOption']; 
 	};
 	// editorInfo?:Omit<KaEditorItem,'showTime'|'_value'|'_key'>
 };

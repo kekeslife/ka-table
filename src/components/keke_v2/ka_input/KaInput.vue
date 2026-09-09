@@ -9,7 +9,7 @@
 			show-search
 			allow-clear
 			class="ka-input"
-			:filter-option="false"
+			:filter-option="$attrs.filterOption || (componentType === 'select' ? false : true)"
 		/>
 	</a-config-provider>
 </template>

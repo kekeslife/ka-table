@@ -1097,7 +1097,7 @@ const editSubmit = async () => {
 const insertData = async () => {
 	props.isDebug && console.log('insertData');
 
-	const record = JSON.stringify(getEditorValObj(false, true, true));
+	const record = JSON.stringify(await getEditorValObj(false, true, true));
 	if (record === '{}') {
 		throw props.language.noChange;
 	}
@@ -1118,7 +1118,7 @@ const insertData = async () => {
 const updateData = async () => {
 	props.isDebug && console.log('updateData');
 
-	const newRecord = JSON.stringify(getEditorValObj(true, true, true));
+	const newRecord = JSON.stringify(await getEditorValObj(true, true, true));
 	if (newRecord === '{}') {
 		throw props.language.noChange;
 	}
@@ -1395,7 +1395,7 @@ const init = () => {
 /** toolbar事件传参 */
 const eventHandle = async (event?: KaTableEventHandle, data?: any) => {
 	if (event) {
-		const handleResult = await event(data || { ...dataSource, editorRecord: getEditorValObj() });
+		const handleResult = await event(data || { ...dataSource, editorRecord: await getEditorValObj() });
 		if (!handleResult.isSuccess) {
 			showError(handleResult.message || props.language.refreshError);
 			return false;
@@ -1426,7 +1426,7 @@ const eventHandle = async (event?: KaTableEventHandle, data?: any) => {
  * @param isJson 是否转换json格式
  * @param isPost 是否过滤post参数
  */
-const getEditorValObj = (isDiff: boolean = false, isJson: boolean = false, isPost: boolean = false) => {
+const getEditorValObj = async(isDiff: boolean = false, isJson: boolean = false, isPost: boolean = false) => {
 	const obj = {};
 	const oldRecord = dataSource.curRecord;
 	try {
@@ -1441,6 +1441,13 @@ const getEditorValObj = (isDiff: boolean = false, isJson: boolean = false, isPos
 					}
 					if (isDiff && oldVal != null) {
 						oldVal = oldVal.length ? oldVal.join(col.selectSplit) : null;
+					}
+				}else if (col.componentType === 'date' && col.valueConverter) {
+					if (newVal != null) {
+						newVal = await col.valueConverter(newVal);
+					}
+					if (isDiff && oldVal != null) {
+						oldVal = await col.valueConverter(oldVal);
 					}
 				}
 			}
@@ -1458,6 +1465,7 @@ const getEditorValObj = (isDiff: boolean = false, isJson: boolean = false, isPos
 
 	return obj;
 };
+
 /** 将编辑值转为json */
 // const _getEditorJson = () => {
 // 	try {
@@ -1481,7 +1489,11 @@ const getCurRecordJson = () => {
 		for (const key in allCols) {
 			const col = allCols[key];
 			const editCol = editorObj.value[key];
-			if (col.editorInfo?.isPost !== false) {
+
+			if(col.editorInfo?.isPost===false){
+				lodash.unset(result, key);
+			}
+			else  {
 				let val = lodash.get(curRecord, key);
 				if (editCol?.componentType === 'select' && editCol?.selectSplit && val != null) {
 					val = val.length ? val.join(editCol.selectSplit) : null;

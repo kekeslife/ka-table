@@ -68,7 +68,7 @@ export const initPorps = (props: InstanceType<typeof KaTable>['$props']) => {
 };
 
 /** 初始化col */
-const initCols = (colObj: KaTableCol | { [key: string]: KaTableCol }, path: string[]) => {
+const initCols = (colObj: KaTableCol | KaTableCols, path: string[]) => {
 	// if (Object.hasOwn(colObj, 'title')) {
 	if (colObj.hasOwnProperty('title')) {
 		if (lodash.isString(colObj.title)) {
@@ -173,7 +173,7 @@ const initCol = (col: KaTableCol, path: string[]) => {
 export const createAllCols = (columns: KaTableCols) => {
 	const result: { [key: string]: KaTableCol } = {};
 
-	const itemHandle = (col: KaTableCol | { [key: string]: KaTableCol }) => {
+	const itemHandle = (col: KaTableCol | KaTableCols) => {
 		if (col._katableIsCol) {
 			const _c = col as KaTableCol;
 			result[_c.key!] = _c;
@@ -195,7 +195,7 @@ export const createAllCols = (columns: KaTableCols) => {
 export const createEditorItemsObj = (columns: KaTableCols): { [key: string]: KaEditorItem } => {
 	const editorItemsObj = {} as { [key: string]: KaEditorItem };
 
-	const itemHandle = (col: KaTableCol | { [key: string]: KaTableCol }) => {
+	const itemHandle = (col: KaTableCol | KaTableCols) => {
 		if (col._katableIsCol) {
 			let _c = col as KaTableCol;
 			// 整理编辑项
@@ -280,7 +280,7 @@ export const createEditorItemsObj = (columns: KaTableCols): { [key: string]: KaE
 export const createFilterCols = (columns: KaTableCols, editorObj: { [key: string]: KaEditorItem }) => {
 	const result = [] as KaFilterCol[];
 
-	const itemHandle = (col: KaTableCol | { [key: string]: KaTableCol }) => {
+	const itemHandle = (col: KaTableCol | KaTableCols) => {
 		if (col._katableIsCol) {
 			let tableCol = col as KaTableCol;
 			let editor = editorObj[tableCol.key!];
@@ -354,7 +354,7 @@ export const createFilterCols = (columns: KaTableCols, editorObj: { [key: string
 export const createExportCols = (columns: KaTableCols) => {
 	const result: KaTableExportPar['cols'] = [];
 
-	const itemHandle = (col: KaTableCol | { [key: string]: KaTableCol }) => {
+	const itemHandle = (col: KaTableCol | KaTableCols) => {
 		if (col._katableIsCol) {
 			const _c = col as KaTableCol;
 			if (_c.exportInfo?.index != null) {
@@ -386,7 +386,7 @@ export const createExportCols = (columns: KaTableCols) => {
 export const createImportCols = (columns: KaTableCols) => {
 	const result: KaTableImportCol[] = [];
 
-	const itemHandle = (col: KaTableCol | { [key: string]: KaTableCol }) => {
+	const itemHandle = (col: KaTableCol | KaTableCols) => {
 		if (col._katableIsCol) {
 			const _c = col as KaTableCol;
 			if (_c.importInfo?.index != null) {
@@ -420,7 +420,7 @@ export const createImportCols = (columns: KaTableCols) => {
 export const createSorterConditions = (columns: KaTableCols): KaSorterCondition[] => {
 	const result = [] as KaSorterCondition[];
 
-	const itemHandle = (col: KaTableCol | { [key: string]: KaTableCol }) => {
+	const itemHandle = (col: KaTableCol | KaTableCols) => {
 		if (col._katableIsCol) {
 			let tableCol = col as KaTableCol;
 			// 整理筛选
@@ -454,7 +454,7 @@ export const createSorterConditions = (columns: KaTableCols): KaSorterCondition[
 export const createSorterObj = (columns: KaTableCols): { [key: string]: string } => {
 	const result = {} as { [key: string]: string };
 
-	const itemHandle = (col: KaTableCol | { [key: string]: KaTableCol }) => {
+	const itemHandle = (col: KaTableCol | KaTableCols) => {
 		if (col._katableIsCol) {
 			let tableCol = col as KaTableCol;
 			// 整理筛选
@@ -515,7 +515,7 @@ const setAntSorter = (antCol: KaTableListCol, sorterCondition?: KaSorterConditio
 export const createAntCols = (columns: KaTableCols): KaTableListCol[] => {
 	const result = [] as KaTableListCol[];
 
-	const itemHandle = (col: KaTableCol | { [key: string]: KaTableCol }) => {
+	const itemHandle = (col: KaTableCol | KaTableCols) => {
 		if (col._katableIsCol) {
 			let tableCol = col as KaTableCol;
 
