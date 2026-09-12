@@ -7,7 +7,7 @@
 			@change="onChange"
 			@search="onSearch"
 			show-search
-			allow-clear
+			:allow-clear="!$attrs.disabled"
 			class="ka-input"
 			:filter-option="$attrs.filterOption || (componentType === 'select' ? false : true)"
 		/>

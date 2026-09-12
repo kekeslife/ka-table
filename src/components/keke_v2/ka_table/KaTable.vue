@@ -1128,7 +1128,7 @@ const updateData = async () => {
 		qsStringify({
 			actNo: 'update',
 			newRecord,
-			oldRecord: JSON.stringify(getCurRecordJson()),
+			oldRecord: JSON.stringify(await getCurRecordJson()),
 		})
 	);
 	if (!res.data.isSuccess) {
@@ -1183,7 +1183,7 @@ const removeData = async () => {
 		props.url,
 		qsStringify({
 			actNo: 'remove',
-			record: JSON.stringify(getCurRecordJson()),
+			record: JSON.stringify(await getCurRecordJson()),
 		})
 	);
 	if (!res.data.isSuccess) {
@@ -1482,7 +1482,7 @@ const getEditorValObj = async(isDiff: boolean = false, isJson: boolean = false, 
 // 	}
 // };
 /** 转换当前记录为已序列化的对象 */
-const getCurRecordJson = () => {
+const getCurRecordJson = async() => {
 	try {
 		const curRecord = dataSource.curRecord;
 		const result = lodash.cloneDeep(curRecord)!;
@@ -1497,6 +1497,9 @@ const getCurRecordJson = () => {
 				let val = lodash.get(curRecord, key);
 				if (editCol?.componentType === 'select' && editCol?.selectSplit && val != null) {
 					val = val.length ? val.join(editCol.selectSplit) : null;
+				}
+				if(editCol?.valueConverter){
+					val = await editCol.valueConverter(val);
 				}
 				lodash.set(result, key, val);
 			}
