@@ -208,6 +208,7 @@ import KaFilter from '../ka_filter/KaFilter.vue';
 import KaToolbar from '../ka_toolbar/KaToolbar.vue';
 import KaInput from '../ka_input/KaInput.vue';
 import dayjs from 'dayjs';
+import 'dayjs/locale/zh-cn';
 import {
 	KaTableCol,
 	KaTableDataSource,
@@ -224,7 +225,7 @@ import {
 	KaTableImportFileResponse,
 	KaTableResponseRecord,
 } from '.';
-import { Ref, computed, getCurrentInstance, onBeforeMount, onMounted, reactive, ref, watch } from 'vue';
+import { Ref, computed, getCurrentInstance, inject, onBeforeMount, onMounted, reactive, ref, watch } from 'vue';
 import { PaginationConfig } from 'ant-design-vue/es/pagination';
 import { ColumnType, FilterValue, SorterResult } from 'ant-design-vue/es/table/interface';
 import { KaFilterCol, KaFilterCondition } from '../ka_filter';
@@ -252,6 +253,7 @@ import axios, { AxiosInstance } from 'axios';
 import { NamePath, ValidateOptions } from 'ant-design-vue/es/form/interface';
 import { FileType } from 'ant-design-vue/es/upload/interface';
 import { langCN, langEN } from '../lang';
+
 
 // #region 扩展
 /** dayjs */
@@ -1556,6 +1558,9 @@ onMounted(async () => {
 		} catch (e: any) {
 			showError(e);
 		}
+	}
+	if(!props.locale){
+		dayjs.locale('zh-cn');
 	}
 });
 // #endregion 生命周期

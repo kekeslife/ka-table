@@ -233,6 +233,7 @@ export const createEditorItemsObj = (columns: KaTableCols): { [key: string]: KaE
 				// 日期组件
 				if (editorItem.componentType === 'date') {
 					editorItem.attrs['format'] = _c.dbInfo?.dateFormat || 'YYYY-MM-DD';
+					editorItem.attrs['valueFormat'] = _c.dbInfo?.dateFormat || 'YYYY-MM-DD';
 					editorItem.attrs['showNow'] = true;
 					editorItem.attrs['showToday'] = true;
 					//时间遮罩
@@ -311,6 +312,7 @@ export const createFilterCols = (columns: KaTableCols, editorObj: { [key: string
 				// 日期组件
 				if (filterCol.componentType === 'date') {
 					filterCol.attrs['format'] = tableCol.dbInfo?.dateFormat || 'YYYY-MM-DD';
+					filterCol.attrs['valueFormat'] = tableCol.dbInfo?.dateFormat || 'YYYY-MM-DD';
 					filterCol.attrs['showNow'] = true;
 					filterCol.attrs['showToday'] = true;
 					//时间遮罩

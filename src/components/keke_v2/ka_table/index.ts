@@ -383,7 +383,6 @@ export const kaTableProps = () => ({
 			hasImport: false,
 		}),
 	},
-
 	/** 点击刷新按钮，刷新数据之前 */
 	onBeforeRefresh: {
 		type: Function as PropType<KaTableEventHandle>,

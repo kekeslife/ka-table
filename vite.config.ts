@@ -32,7 +32,7 @@ export default defineConfig({
 			formats: ['es', 'iife'],
 		},
 		rollupOptions: {
-			external: ['vue', 'ant-design-vue', 'axios', 'dayjs'],
+			external: ['vue', 'ant-design-vue', 'axios', 'dayjs','dayjs/locale/zh-cn'],
 			// plugins: [visualizer({ open: true })],
 			output: {
 				globals: {

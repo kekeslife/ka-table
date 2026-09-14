@@ -1,5 +1,6 @@
 <template>
 	<a-space>
+		<slot name="toolbar"></slot>
 		<a-space-compact :size="props.size">
 			<a-tooltip v-if="props.refresh.isShow !== false" :title="props.refresh.title">
 				<a-button @click="props.refresh.onClick">
@@ -70,7 +71,7 @@
 				</a-popconfirm>
 			</a-tooltip>
 		</a-space-compact>
-		<slot name="toolbar"></slot>
+		<slot name="toolbarRight"></slot>
 	</a-space>
 </template>
 
