@@ -118,7 +118,7 @@ const initCol = (col: KaTableCol, path: string[]) => {
 
 	// 编辑
 	if (col.editorInfo) {
-		if (col.editorInfo.componentType === 'select') {
+		if (col.editorInfo.componentType === 'select' || col.editorInfo.componentType === 'autoComplete') {
 			if (!col.editorInfo.options) {
 				col.editorInfo.options = col.listInfo?.options as any;
 			}
@@ -244,7 +244,7 @@ export const createEditorItemsObj = (columns: KaTableCols): { [key: string]: KaE
 					editorItem.attrs['precision'] = _c.editorInfo.precision;
 				}
 				// 选择组件
-				else if (editorItem.componentType === 'select') {
+				else if (editorItem.componentType === 'select' || editorItem.componentType === 'autoComplete') {
 					if (!_c.editorInfo.options) {
 						console.error(`${_c.key}缺少editorInfo.options`);
 					}
@@ -323,7 +323,7 @@ export const createFilterCols = (columns: KaTableCols, editorObj: { [key: string
 					filterCol.attrs['precision'] = editor?.attrs?.precision;
 				}
 				// 选择组件
-				else if (filterCol.componentType === 'select') {
+				else if (filterCol.componentType === 'select' || filterCol.componentType === 'autoComplete') {
 					filterCol.options =
 						tableCol.filterInfo.options || editor?.options || (tableCol.listInfo?.options as KaEditorItem['options']);
 					filterCol.attrs['showSearch'] = true;

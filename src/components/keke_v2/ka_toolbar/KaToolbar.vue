@@ -94,6 +94,8 @@ const confirmBtnProps = { style: { borderRadius: '6px' } };
 
 const props = defineProps(kaTableToolbarProps());
 
+const slots = defineSlots();
+
 const fileList = ref<UploadProps['fileList']>([]);
 
 const beforeUpload: UploadProps['beforeUpload'] = file => {

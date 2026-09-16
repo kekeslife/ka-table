@@ -93,6 +93,7 @@
 							:language="props.language"
 						>
 							<template #toolbar><slot name="toolbar" :data-source="dataSource"></slot></template>
+							<template #toolbarRight><slot name="toolbarRight" :data-source="dataSource"></slot></template>
 						</ka-toolbar>
 					</div>
 				</a-flex>

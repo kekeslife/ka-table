@@ -15,7 +15,7 @@
 </template>
 
 <script setup lang="ts">
-import { DatePicker, Input, InputNumber, Select, Textarea } from 'ant-design-vue';
+import { AutoComplete, DatePicker, Input, InputNumber, Select, Textarea } from 'ant-design-vue';
 import { type Component, PropType, markRaw } from 'vue';
 import debounce from 'lodash-es/debounce';
 
@@ -31,7 +31,7 @@ const props = defineProps({
 	valueConverter: { type: Function as PropType<(value: any) => Promise<any>> },
 	/** 内置输入框类型 */
 	componentType: {
-		type: String as PropType<'input' | 'textarea' | 'number' | 'date' | 'select'>,
+		type: String as PropType<'input' | 'textarea' | 'number' | 'date' | 'select' | 'autoComplete'>,
 		default: 'input',
 
 		// validator(value, props) {
@@ -59,6 +59,7 @@ const components = {
 	number: markRaw(InputNumber),
 	date: markRaw(DatePicker),
 	select: markRaw(Select),
+	autoComplete: markRaw(AutoComplete),
 };
 
 const onSearchDebounce = debounce((searchKey: string) => {
