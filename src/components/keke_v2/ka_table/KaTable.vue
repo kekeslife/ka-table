@@ -1,9 +1,5 @@
 <template>
-	<a-config-provider
-		:component-size="props.size"
-		:locale="props.locale"
-		:theme="mergedTheme"
-	>
+	<a-config-provider :component-size="props.size" :locale="props.locale" :theme="mergedTheme">
 		<a-table
 			class="ka-table"
 			bordered
@@ -182,7 +178,7 @@
 				<ka-editor
 					v-if="props.toolbar.hasAdd || props.toolbar.hasEdit"
 					ref="$form"
-					v-show="['Add','Edit'].includes(tableStatus!)"
+					v-show="['Add', 'Edit'].includes(tableStatus!)"
 					:items-obj="editorObj"
 				>
 				</ka-editor>
@@ -255,11 +251,10 @@ import { NamePath, ValidateOptions } from 'ant-design-vue/es/form/interface';
 import { FileType } from 'ant-design-vue/es/upload/interface';
 import { langCN, langEN } from '../lang';
 
-
 // #region 扩展
 /** dayjs */
 dayjs.prototype.toJSON = function () {
-	return this.format();
+	return this.format('YYYY-MM-DDTHH:mm:ss');
 };
 
 let $axios: AxiosInstance = axios.create();
@@ -288,17 +283,17 @@ const borderRadius = token.value.borderRadiusLG + 'px';
 const tdPadding = token.value.paddingXS + 'px';
 
 const mergedTheme = computed(() => {
-  if (!props.theme) return {};
-  
-  return {
-    token: {
-		colorPrimary: props.theme,
-		colorBorderSecondary: props.theme,
-		colorFillAlter: colsColor,
-		colorFillSecondary: colsColor,
-		colorBgContainerDisabled: '#F0F0F0',
-	}
-  };
+	if (!props.theme) return {};
+
+	return {
+		token: {
+			colorPrimary: props.theme,
+			colorBorderSecondary: props.theme,
+			colorFillAlter: colsColor,
+			colorFillSecondary: colsColor,
+			colorBgContainerDisabled: '#F0F0F0',
+		},
+	};
 });
 
 /** 加载状态 */
@@ -407,7 +402,7 @@ watch(
 		} else if (newLang === 'cn') {
 			Object.assign(props.language!, langCN);
 		}
-	}
+	},
 );
 watch(tableStatus, newValue => {
 	switch (newValue) {
@@ -485,8 +480,12 @@ defineExpose({
 	getData: () => {
 		return dataSource;
 	},
-	showLoading:(type:keyof typeof loading)=>loading[type] = true,
-	hideLoading:(type:keyof typeof loading)=>loading[type] = false,
+	openEdit:async(index:number)=>{
+		await onAntRowClick(index);
+		await onToolbarEdit();
+	},
+	showLoading: (type: keyof typeof loading) => (loading[type] = true),
+	hideLoading: (type: keyof typeof loading) => (loading[type] = false),
 });
 // #endregion watch
 
@@ -496,13 +495,20 @@ defineExpose({
 
 //  #region list
 /** ant table 自定义表格事件。单击行 */
+const onAntRowClick = async (index: number | undefined) => {
+	dataSource.activeIndex = index!;
+	if (props.onAfterRowClick) {
+		if (!(await eventHandle(props.onAfterRowClick))) return;
+	}
+};
 const rowEvent = (_preRecord: KaTableRowRecord, index: number | undefined) => {
 	return {
 		onclick: async (_event: MouseEvent) => {
-			dataSource.activeIndex = index!;
-			if (props.onAfterRowClick) {
-				if (!(await eventHandle(props.onAfterRowClick))) return;
-			}
+			// dataSource.activeIndex = index!;
+			// if (props.onAfterRowClick) {
+			// 	if (!(await eventHandle(props.onAfterRowClick))) return;
+			// }
+			await onAntRowClick(index);
 			// console.log('customRow onClick', index);
 		},
 		onDblclick: async (_event: MouseEvent) => {
@@ -654,7 +660,7 @@ const loadData = async () => {
 					pageSize: pagination.pageSize,
 					pageNum: pagination.current,
 				} as KaTableSearchPar),
-			})
+			}),
 		);
 
 		const data = res.data;
@@ -715,7 +721,7 @@ const loadData = async () => {
 /** 将tableChange的ant排序值转换为排序条件 */
 const convertAntSortToSorterConditions = (
 	antSorters: SorterResult | SorterResult[],
-	curConditions: KaSorterCondition[]
+	curConditions: KaSorterCondition[],
 ) => {
 	console.log('convertAntSortToSorterConditions');
 	if (curConditions == null) return [];
@@ -1110,7 +1116,7 @@ const insertData = async () => {
 		qsStringify({
 			actNo: 'insert',
 			record: record,
-		})
+		}),
 	);
 	if (!res.data.isSuccess) {
 		throw res.data.message || props.language.addError;
@@ -1132,7 +1138,7 @@ const updateData = async () => {
 			actNo: 'update',
 			newRecord,
 			oldRecord: JSON.stringify(await getCurRecordJson()),
-		})
+		}),
 	);
 	if (!res.data.isSuccess) {
 		throw res.data.message || props.language.editError;
@@ -1187,7 +1193,7 @@ const removeData = async () => {
 		qsStringify({
 			actNo: 'remove',
 			record: JSON.stringify(await getCurRecordJson()),
-		})
+		}),
 	);
 	if (!res.data.isSuccess) {
 		throw res.data.message || props.language.removeError;
@@ -1245,7 +1251,7 @@ const exportData = async (isAll: boolean) => {
 		}),
 		{
 			responseType: 'blob',
-		}
+		},
 	);
 
 	if (res.headers['content-type']?.toString().includes('application/json')) {
@@ -1328,7 +1334,7 @@ const importData = async () => {
 		qsStringify({
 			actNo: 'import',
 			records: JSON.stringify(importRecords.value),
-		})
+		}),
 	);
 	if (!res.data.isSuccess) {
 		throw res.data.message || props.language.importError;
@@ -1343,7 +1349,7 @@ const downloadTemplate = async () => {
 		}),
 		{
 			responseType: 'blob',
-		}
+		},
 	);
 
 	if (res.headers['content-type']?.toString().includes('application/json')) {
@@ -1429,7 +1435,7 @@ const eventHandle = async (event?: KaTableEventHandle, data?: any) => {
  * @param isJson 是否转换json格式
  * @param isPost 是否过滤post参数
  */
-const getEditorValObj = async(isDiff: boolean = false, isJson: boolean = false, isPost: boolean = false) => {
+const getEditorValObj = async (isDiff: boolean = false, isJson: boolean = false, isPost: boolean = false) => {
 	const obj = {};
 	const oldRecord = dataSource.curRecord;
 	try {
@@ -1445,7 +1451,7 @@ const getEditorValObj = async(isDiff: boolean = false, isJson: boolean = false, 
 					if (isDiff && oldVal != null) {
 						oldVal = oldVal.length ? oldVal.join(col.selectSplit) : null;
 					}
-				}else if (col.componentType === 'date' && col.valueConverter) {
+				} else if (col.componentType === 'date' && col.valueConverter) {
 					if (newVal != null) {
 						newVal = await col.valueConverter(newVal);
 					}
@@ -1485,7 +1491,7 @@ const getEditorValObj = async(isDiff: boolean = false, isJson: boolean = false, 
 // 	}
 // };
 /** 转换当前记录为已序列化的对象 */
-const getCurRecordJson = async() => {
+const getCurRecordJson = async () => {
 	try {
 		const curRecord = dataSource.curRecord;
 		const result = lodash.cloneDeep(curRecord)!;
@@ -1493,15 +1499,14 @@ const getCurRecordJson = async() => {
 			const col = allCols[key];
 			const editCol = editorObj.value[key];
 
-			if(col.editorInfo?.isPost===false){
+			if (col.editorInfo?.isPost === false) {
 				lodash.unset(result, key);
-			}
-			else  {
+			} else {
 				let val = lodash.get(curRecord, key);
 				if (editCol?.componentType === 'select' && editCol?.selectSplit && val != null) {
 					val = val.length ? val.join(editCol.selectSplit) : null;
 				}
-				if(editCol?.valueConverter){
+				if (editCol?.valueConverter) {
 					val = await editCol.valueConverter(val);
 				}
 				lodash.set(result, key, val);
@@ -1560,7 +1565,7 @@ onMounted(async () => {
 			showError(e);
 		}
 	}
-	if(!props.locale){
+	if (!props.locale) {
 		dayjs.locale('zh-cn');
 	}
 });
@@ -1606,7 +1611,7 @@ onMounted(async () => {
 	background-color: v-bind(colsColor);
 }
 
-.ka-table :deep(.ant-table-container){
+.ka-table :deep(.ant-table-container) {
 	overflow: auto;
 }
 
