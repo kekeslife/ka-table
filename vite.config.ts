@@ -32,14 +32,19 @@ export default defineConfig({
 			formats: ['es', 'iife'],
 		},
 		rollupOptions: {
-			external: ['vue', 'ant-design-vue', 'axios', 'dayjs','dayjs/locale/zh-cn'],
+			external: [
+				'vue',
+				/^ant-design-vue(\/.*)?$/, // 彻底排除 antdv 所有子模块
+				'axios',
+				/^dayjs(\/.*)?$/,
+			],
 			// plugins: [visualizer({ open: true })],
 			output: {
 				globals: {
 					vue: 'Vue',
 					'ant-design-vue': 'antd',
-					'dayjs': 'dayjs',
-					'axios': 'axios',
+					dayjs: 'dayjs',
+					axios: 'axios',
 				},
 			},
 		},

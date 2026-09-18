@@ -10,7 +10,7 @@ export type KaFilterCondition = {
 
 export type KaFilterItem = KaFilterCondition & {
     valOptions?: KaEditorItemOption[];
-    valComponent?: 'input' | 'number' | 'date' | 'select';
+    valComponent?: 'input' | 'number' | 'date' | 'select' | 'autoComplete';
     valAttrs?: { [key: string]: any };
     optOptions: { label: string, value: string }[];
     col?: KaFilterCol;
@@ -26,6 +26,7 @@ export type KaFilterCol = {
     attrs?: { [key: string]: any };
     valueConverter?: KaEditorItem['valueConverter'];
     width?:KaEditorItem['width'];
+    index?:number;
     // selectSplit?: string;
 }
 

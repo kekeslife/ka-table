@@ -9,13 +9,13 @@
 			show-search
 			:allow-clear="!$attrs.disabled"
 			class="ka-input"
-			:filter-option="$attrs.filterOption || (componentType === 'select' ? false : true)"
+			:filter-option="$attrs.filterOption || (['select','autoComplete'].includes(componentType) ? false : true)"
 		/>
 	</a-config-provider>
 </template>
 
 <script setup lang="ts">
-import { AutoComplete, DatePicker, Input, InputNumber, Select, Textarea } from 'ant-design-vue';
+import { AutoComplete, DatePicker, Form, Input, InputNumber, Select, Textarea } from 'ant-design-vue';
 import { type Component, PropType, markRaw } from 'vue';
 import debounce from 'lodash-es/debounce';
 
@@ -25,6 +25,7 @@ const emit = defineEmits<{
 	change: [value: any, option: any];
 	search: [value: any];
 }>();
+
 
 const props = defineProps({
 	/** 自定义值转换 */
@@ -80,15 +81,18 @@ const trigChange = async (value: any, option: any) => {
 	emit('change', value, option);
 };
 
+
 const onChange = async (v: any, option?: any) => {
+	// console.log('onChange')
 	if (v instanceof Event) {
 		v = (v.target as HTMLInputElement).value;
 	}
-
+	
 	if (props.debounceDelay === 0 || ['date', 'select'].includes(props.componentType)) {
 		await trigChange(v, option);
 		return;
 	}
+
 
 	onChangeDebounce(v, option);
 };

@@ -23,6 +23,11 @@ export type KaTablePropsToolbar = {
 	hasImport?: boolean;
 };
 
+/** 开启筛选面板 */
+export type KaTablePropsFilterPanel = {
+	isOpen?: boolean;
+};
+
 /** 多语言 */
 export type KaTableLang = {
 	toolbarRefresh: string;
@@ -133,6 +138,8 @@ export type KaTableCol = {
 		valueConverter?: KaEditorItem['valueConverter'];
 		/** 自定义attr */
 		attrs?: { [propName: string]: any };
+		componentType?: KaEditorItem['componentType'];
+		index?:number;
 	};
 	exportInfo?: {
 		index: number | null;
@@ -354,6 +361,8 @@ export const kaTableProps = () => ({
 	exportTitle: { type: String, default: '' },
 	/** 导出文件名 */
 	exportFileName: { type: Function as PropType<() => string> },
+	/** 日期格式 */
+	dateFormat:{ type: String, default: 'YYYY/MM/DD' },
 
 	initFilterConditions: { type: Array as PropType<KaFilterCondition[]>, default: [] },
 	frozenFilterConditions: { type: Array as PropType<KaFilterCondition[]>, default: [] },
@@ -382,6 +391,11 @@ export const kaTableProps = () => ({
 			hasExport: false,
 			hasImport: false,
 		}),
+	},
+	/** 查询面板 */
+	filterPanel:{
+		type: Object as PropType<KaTablePropsFilterPanel>,
+		default: null,
 	},
 	/** 点击刷新按钮，刷新数据之前 */
 	onBeforeRefresh: {
@@ -535,4 +549,8 @@ export const kaTableProps = () => ({
 	onAfterRowDbClick: {
 		type: Function as PropType<KaTableEventHandle>,
 	},
+	/** 筛选面板提交筛选之前 */
+	onBeforeCommitFilterPanel:{
+		type: Function as PropType<KaTableEventHandle>,
+	}
 });

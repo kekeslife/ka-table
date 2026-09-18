@@ -4,16 +4,16 @@ import KaTable from './KaTable.vue';
 import { KaEditorItem } from '../ka_editor';
 import { KaFilterCol } from '../ka_filter';
 import { KaSorterCondition } from '../ka_sorter';
-import {langCN,langEN} from '../lang';
+import { langCN, langEN } from '../lang';
 
 // #region init
 
 export const initPorps = (props: InstanceType<typeof KaTable>['$props']) => {
-	if(!props.language?.addError){
-		if(props.defaultLang === 'en'){
-			Object.assign(props.language! , langEN);
-		}else{
-			Object.assign(props.language! , langCN);
+	if (!props.language?.addError) {
+		if (props.defaultLang === 'en') {
+			Object.assign(props.language!, langEN);
+		} else {
+			Object.assign(props.language!, langCN);
 		}
 	}
 
@@ -63,26 +63,26 @@ export const initPorps = (props: InstanceType<typeof KaTable>['$props']) => {
 	}
 
 	for (const colName in props.columns) {
-		initCols(props.columns[colName], [colName]);
+		initCols(props.columns[colName], [colName],props);
 	}
 };
 
 /** 初始化col */
-const initCols = (colObj: KaTableCol | KaTableCols, path: string[]) => {
+const initCols = (colObj: KaTableCol | KaTableCols, path: string[],props: InstanceType<typeof KaTable>['$props']) => {
 	// if (Object.hasOwn(colObj, 'title')) {
 	if (colObj.hasOwnProperty('title')) {
 		if (lodash.isString(colObj.title)) {
-			initCol(colObj as KaTableCol, [...path]);
+			initCol(colObj as KaTableCol, [...path],props);
 			return;
 		}
 	}
 	if (lodash.isString(colObj)) throw new Error(`column配置错误:(${colObj})`);
 	for (const key in colObj) {
 		const subObj = (colObj as { [key: string]: KaTableCol })[key];
-		initCols(subObj, [...path, key]);
+		initCols(subObj, [...path, key],props);
 	}
 };
-const initCol = (col: KaTableCol, path: string[]) => {
+const initCol = (col: KaTableCol, path: string[],props: InstanceType<typeof KaTable>['$props']) => {
 	const key = path.join('.');
 	col.key = key;
 	col._katableIsCol = true;
@@ -97,7 +97,7 @@ const initCol = (col: KaTableCol, path: string[]) => {
 			col.dbInfo.dataType = 'string';
 		} else if (col.dbInfo.dataType === 'date') {
 			if (col.dbInfo.dateFormat === undefined) {
-				col.dbInfo.dateFormat = 'YYYY/MM/DD';
+				col.dbInfo.dateFormat = props.dateFormat || 'YYYY/MM/DD';
 			}
 		}
 	}
@@ -115,7 +115,6 @@ const initCol = (col: KaTableCol, path: string[]) => {
 		}
 	}
 
-
 	// 编辑
 	if (col.editorInfo) {
 		if (col.editorInfo.componentType === 'select' || col.editorInfo.componentType === 'autoComplete') {
@@ -123,7 +122,7 @@ const initCol = (col: KaTableCol, path: string[]) => {
 				col.editorInfo.options = col.listInfo?.options as any;
 			}
 		}
-		if(col.editorInfo.isPost == null){
+		if (col.editorInfo.isPost == null) {
 			col.editorInfo.isPost = true;
 		}
 	}
@@ -145,7 +144,7 @@ const initCol = (col: KaTableCol, path: string[]) => {
 	//         col.filterInfo.isFilter = true;
 	//     }
 	// }
-	
+
 	// 排序
 	// if (!col.sortInfo) {
 	// 	if (col.editorInfo?.isPost) {
@@ -289,25 +288,30 @@ export const createFilterCols = (columns: KaTableCols, editorObj: { [key: string
 			if (tableCol.filterInfo?.isFilter) {
 				const filterCol: KaFilterCol = {
 					key: tableCol.key!,
-					title: getFirstNotNull([tableCol.filterInfo?.title,tableCol.listInfo?.title, tableCol.title, tableCol.key!]),
+					title: getFirstNotNull([tableCol.filterInfo?.title, tableCol.listInfo?.title, tableCol.title, tableCol.key!]),
 					componentType: 'input',
 					valueConverter: tableCol.filterInfo.valueConverter,
 					debounceDelay: editor?.debounceDelay,
 					width: tableCol.filterInfo.width?.toString(),
+					index:tableCol.filterInfo.index || tableCol.listInfo?.index
 				};
 				filterCol.attrs = {};
-				if (!editor) {
-					switch (tableCol.dbInfo?.dataType) {
-						case 'date':
-						case 'number':
-							filterCol.componentType = tableCol.dbInfo.dataType;
-							break;
-						default:
-							filterCol.componentType = 'input';
-							break;
+				if(!tableCol.filterInfo.componentType){
+					if (!editor) {
+						switch (tableCol.dbInfo?.dataType) {
+							case 'date':
+							case 'number':
+								filterCol.componentType = tableCol.dbInfo.dataType;
+								break;
+							default:
+								filterCol.componentType = 'input';
+								break;
+						}
+					} else {
+						filterCol.componentType = editor.componentType;
 					}
-				} else {
-					filterCol.componentType = editor.componentType;
+				}else{
+					filterCol.componentType = tableCol.filterInfo.componentType;
 				}
 				// 日期组件
 				if (filterCol.componentType === 'date') {
@@ -350,7 +354,7 @@ export const createFilterCols = (columns: KaTableCols, editorObj: { [key: string
 		itemHandle(columns[colName]);
 	}
 
-	return result;
+	return result.sort((a,b)=>a.index!-b.index!);
 };
 /** 初始化汇出exportInfos */
 export const createExportCols = (columns: KaTableCols) => {
@@ -493,7 +497,7 @@ export const setAntSorters = (antCols: KaTableListCol[], sorterConditions: KaSor
 	for (const antCol of antCols) {
 		setAntSorter(
 			antCol,
-			sorterConditions.find(item => item.key === antCol.key)
+			sorterConditions.find(item => item.key === antCol.key),
 		);
 	}
 };
@@ -618,4 +622,10 @@ export const qsStringify = (obj: { [key: string]: any }) => {
 		}
 	}
 	return par;
+};
+
+export const hasValue = (val: any) => {
+	if (lodash.isNumber(val)) return !lodash.isNaN(val);
+	if (lodash.isString(val)) return val.length > 0;
+	return !lodash.isNil(val);
 };

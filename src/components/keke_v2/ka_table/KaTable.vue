@@ -1,5 +1,25 @@
 <template>
 	<a-config-provider :component-size="props.size" :locale="props.locale" :theme="mergedTheme">
+		<!-- <div>
+			<ka-input
+				v-for="item in filterCols"
+				:key="item.key"
+				:component-type="item.componentType"
+				v-bind="item.attrs"
+				@search="val => onAntFilterSearch(item.key, val)"
+				:style="{ width: item.width }"
+			>
+			</ka-input>
+		</div> -->
+		<ka-filter-panel
+			@commit="commitFilterPanel"
+			@reset="resetFilterPanel"
+			v-if="!!props.filterPanel"
+			:columns="filterCols"
+			ref="$filterPanel"
+			:language="props.language"
+		>
+		</ka-filter-panel>
 		<a-table
 			class="ka-table"
 			bordered
@@ -201,6 +221,7 @@
 <script setup lang="ts">
 import { Modal, TableProps, theme } from 'ant-design-vue';
 import KaEditor from '../ka_editor/KaEditor.vue';
+import KaFilterPanel from '../ka_filter_panel/KaFilterPanel.vue';
 import KaFilter from '../ka_filter/KaFilter.vue';
 import KaToolbar from '../ka_toolbar/KaToolbar.vue';
 import KaInput from '../ka_input/KaInput.vue';
@@ -225,7 +246,7 @@ import {
 import { Ref, computed, getCurrentInstance, inject, onBeforeMount, onMounted, reactive, ref, watch } from 'vue';
 import { PaginationConfig } from 'ant-design-vue/es/pagination';
 import { ColumnType, FilterValue, SorterResult } from 'ant-design-vue/es/table/interface';
-import { KaFilterCol, KaFilterCondition } from '../ka_filter';
+import { KaFilterCol, KaFilterCondition, KaFilterItem } from '../ka_filter';
 import * as lodash from 'lodash-es';
 import {
 	createAntCols,
@@ -240,6 +261,7 @@ import {
 	createExportCols,
 	createImportCols,
 	qsStringify,
+	hasValue,
 } from './common';
 import { KaEditorItem, KaEditorItemOption } from '../ka_editor';
 import { KaSorterCondition } from '../ka_sorter';
@@ -279,11 +301,19 @@ const activeRowColor = props.theme ? props.theme + '55' : token.value.colorPrima
 const colsColor = props.theme ? props.theme + '33' : token.value.colorFillAlter;
 const titleColor = props.theme || token.value.colorFillAlter;
 const borderColor = props.theme || token.value.colorBorderSecondary;
+const borderPriColor = props.theme || token.value.colorBorder;
 const borderRadius = token.value.borderRadiusLG + 'px';
 const tdPadding = token.value.paddingXS + 'px';
 
 const mergedTheme = computed(() => {
-	if (!props.theme) return {};
+	if (!props.theme)
+		return {
+			components: {
+				Table: {
+					colorBorderSecondary: borderPriColor,
+				},
+			},
+		};
 
 	return {
 		token: {
@@ -307,6 +337,7 @@ const tableStatus = ref<KaTableStatus>();
 
 /** 所有字段 */
 let allCols = {} as { [key: string]: KaTableCol };
+
 // #endregion 普通
 
 //  #region list
@@ -369,6 +400,43 @@ let filterConditions = [] as KaFilterCondition[];
 /** 过滤是否来自ant table */
 // let isAntFilter = false;
 // #endregion 筛选
+
+//  #region 筛选面板
+/** 筛选dom */
+const $filterPanel = ref<InstanceType<typeof KaFilterPanel>>();
+const commitFilterPanel = async (data: { [key: string]: KaFilterItem }) => {
+	const conditions: KaFilterItem[] = [];
+
+	for (let key in data) {
+		const item = data[key];
+		if (!hasValue(item.val)) continue;
+		if (item.valComponent === 'date') {
+			const col = lodash.get(props.columns, key) as KaTableCol;
+			item.opt = 'gte';
+			conditions.push(item);
+			const d2 = lodash.cloneDeep(item);
+			d2.opt = 'lt';
+			d2.val = dayjs(item.val).add(1, 'day').format(col.dbInfo?.dateFormat || 'YYYY/MM/DD');
+			conditions.push(d2);
+		}else{
+			conditions.push(item);
+		}
+	}
+	if(props.onBeforeCommitFilterPanel){
+		const res = await props.onBeforeCommitFilterPanel(conditions);
+		if(!res.isSuccess){
+			showError(res.message);
+			return;
+		}
+	}
+	setFilters(conditions, false);
+	await loadData();
+};
+const resetFilterPanel = async() => {
+	setFilters([]);
+	await loadData();
+};
+// #endregion 筛选面板
 
 //  #region 编辑
 /** 编辑dom */
@@ -480,7 +548,7 @@ defineExpose({
 	getData: () => {
 		return dataSource;
 	},
-	openEdit:async(index:number)=>{
+	openEdit: async (index: number) => {
 		await onAntRowClick(index);
 		await onToolbarEdit();
 	},
@@ -934,10 +1002,18 @@ const filterClear = async () => {
 /** table表头上的筛选关键字查询 */
 const onAntFilterSearch = async (key: string, value: any) => {
 	const filterCol = filterCols.value.find(col => col.key === key);
+	// if (filterCol) {
+	// 	if (filterCol.options && lodash.isFunction(filterCol.options)) {
+	// 		filterCol.attrs!.options = await (filterCol.options as (key: string) => Promise<KaEditorItemOption[]>)(value);
+	// 	}
+	// }
 	if (filterCol) {
-		if (filterCol.options && lodash.isFunction(filterCol.options)) {
-			filterCol.attrs!.options = await (filterCol.options as (key: string) => Promise<KaEditorItemOption[]>)(value);
-		}
+		await onFilterSearch(filterCol, value);
+	}
+};
+const onFilterSearch = async (filterCol: KaFilterCol, value: any) => {
+	if (filterCol.options && lodash.isFunction(filterCol.options)) {
+		filterCol.attrs!.options = await (filterCol.options as (key: string) => Promise<KaEditorItemOption[]>)(value);
 	}
 };
 /** 清空table表头上的筛选 */
@@ -1605,7 +1681,7 @@ onMounted(async () => {
 .ka-table :deep(.ant-table-pagination) {
 	margin: 0;
 	padding: v-bind(tdPadding);
-	border: 1px solid v-bind(borderColor);
+	border: 1px solid v-bind(borderPriColor);
 	border-top: 0;
 	border-radius: 0 0 v-bind(borderRadius) v-bind(borderRadius);
 	background-color: v-bind(colsColor);
@@ -1613,6 +1689,10 @@ onMounted(async () => {
 
 .ka-table :deep(.ant-table-container) {
 	overflow: auto;
+}
+
+.ka-filter-panel {
+	margin-bottom: 1rem;
 }
 
 :global(.ka-table-drawer .edit-item-inline-block) {
