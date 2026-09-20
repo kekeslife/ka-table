@@ -564,6 +564,9 @@ defineExpose({
 //  #region list
 /** ant table 自定义表格事件。单击行 */
 const onAntRowClick = async (index: number | undefined) => {
+	if (props.onBeforeRowClick) {
+		if (!(await eventHandle(props.onBeforeRowClick))) return;
+	}
 	dataSource.activeIndex = index!;
 	if (props.onAfterRowClick) {
 		if (!(await eventHandle(props.onAfterRowClick))) return;

@@ -541,6 +541,10 @@ export const kaTableProps = () => ({
 	onPostPage: {
 		type: Function as PropType<KaTableEventHandle>,
 	},
+	/** 点击行之前 */
+	onBeforeRowClick: {
+		type: Function as PropType<KaTableEventHandle>,
+	},
 	/** 点击行之后 */
 	onAfterRowClick: {
 		type: Function as PropType<KaTableEventHandle>,
