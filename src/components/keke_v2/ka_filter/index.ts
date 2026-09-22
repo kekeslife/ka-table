@@ -10,7 +10,7 @@ export type KaFilterCondition = {
 
 export type KaFilterItem = KaFilterCondition & {
     valOptions?: KaEditorItemOption[];
-    valComponent?: 'input' | 'number' | 'date' | 'select' | 'autoComplete';
+    valComponent?: KaEditorItem['componentType'];
     valAttrs?: { [key: string]: any };
     optOptions: { label: string, value: string }[];
     col?: KaFilterCol;

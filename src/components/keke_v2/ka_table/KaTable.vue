@@ -14,10 +14,16 @@
 		<ka-filter-panel
 			@commit="commitFilterPanel"
 			@reset="resetFilterPanel"
+			@add="onToolbarAdd"
+			@edit="onToolbarEdit"
+			@remove="onToolbarRemove"
+			@refresh="onToolbarRefresh"
 			v-if="!!props.filterPanel"
 			:columns="filterCols"
 			ref="$filterPanel"
 			:language="props.language"
+			:toolbar="props.toolbar"
+			:isDisabled="dataSource.activeIndex == null" ,
 		>
 		</ka-filter-panel>
 		<a-table
@@ -105,7 +111,7 @@
 								isDisabled: dataSource.activeIndex == null,
 								onClick: onToolbarRemove,
 							}"
-							:activate-color="primaryColor"
+							:activate-color="props.theme.primaryColor"
 							:language="props.language"
 						>
 							<template #toolbar><slot name="toolbar" :data-source="dataSource"></slot></template>
@@ -146,7 +152,7 @@
 				</div>
 			</template>
 			<template #customFilterIcon="{ filtered }">
-				<search-outlined :style="{ color: filtered ? props.theme : undefined }" />
+				<search-outlined :style="{ color: filtered ? props.theme.primaryColor : undefined }" />
 			</template>
 			<!-- 排序 -->
 			<template #headerCell="{ column }">
@@ -296,12 +302,12 @@ const slots = defineSlots();
 /** 样式 */
 const { useToken } = theme;
 const { token } = useToken();
-const primaryColor = props.theme || token.value.colorPrimary;
-const activeRowColor = props.theme ? props.theme + '55' : token.value.colorPrimaryBg;
-const colsColor = props.theme ? props.theme + '33' : token.value.colorFillAlter;
-const titleColor = props.theme || token.value.colorFillAlter;
-const borderColor = props.theme || token.value.colorBorderSecondary;
-const borderPriColor = props.theme || token.value.colorBorder;
+// const primaryColor = props.theme || token.value.colorPrimary;
+// const activeRowColor = props.theme ? props.theme + '55' : token.value.colorPrimaryBg;
+// const colsColor = props.theme ? props.theme + '33' : token.value.colorFillAlter;
+// const titleColor = props.theme || token.value.colorFillAlter;
+// const borderColor = props.theme || token.value.colorBorderSecondary;
+// const borderPriColor = props.theme || token.value.colorBorder;
 const borderRadius = token.value.borderRadiusLG + 'px';
 const tdPadding = token.value.paddingXS + 'px';
 
@@ -310,17 +316,17 @@ const mergedTheme = computed(() => {
 		return {
 			components: {
 				Table: {
-					colorBorderSecondary: borderPriColor,
+					colorBorderSecondary: token.value.colorBorder,
 				},
 			},
 		};
 
 	return {
 		token: {
-			colorPrimary: props.theme,
-			colorBorderSecondary: props.theme,
-			colorFillAlter: colsColor,
-			colorFillSecondary: colsColor,
+			colorPrimary: props.theme.primaryColor,
+			colorBorderSecondary: props.theme.borderPriColor,
+			colorFillAlter: props.theme.colsColor,
+			colorFillSecondary: props.theme.colsColor,
 			colorBgContainerDisabled: '#F0F0F0',
 		},
 	};
@@ -410,13 +416,18 @@ const commitFilterPanel = async (data: { [key: string]: KaFilterItem }) => {
 	for (let key in data) {
 		const item = data[key];
 		if (!hasValue(item.val)) continue;
-		if (item.valComponent === 'date') {
+		if (item.valComponent === 'dateRange') {
+			var dateRange = item.val as [string, string];
 			const col = lodash.get(props.columns, key) as KaTableCol;
-			item.opt = 'gte';
-			conditions.push(item);
+			
+			const d1 = lodash.cloneDeep(item);
+			d1.opt = 'gte';
+			d1.val = dateRange[0];
+			conditions.push(d1);
+
 			const d2 = lodash.cloneDeep(item);
 			d2.opt = 'lt';
-			d2.val = dayjs(item.val).add(1, 'day').format(col.dbInfo?.dateFormat || 'YYYY/MM/DD');
+			d2.val = dayjs(dateRange[1]).add(1, 'day').format(col.dbInfo?.dateFormat || 'YYYY/MM/DD');
 			conditions.push(d2);
 		}else{
 			conditions.push(item);
@@ -1475,6 +1486,16 @@ const init = () => {
 	if (!importCols.length) {
 		props.toolbar.hasImport = false;
 	}
+
+	// 颜色
+	if(!props.theme.activeRowColor) props.theme.activeRowColor = (props.theme.primaryColor ? props.theme.primaryColor +'55' : token.value.colorPrimaryBg);
+	if(!props.theme.colsColor) props.theme.colsColor = (props.theme.primaryColor ? props.theme.primaryColor +'33' : token.value.colorFillAlter);
+	if(!props.theme.primaryColor) props.theme.primaryColor = token.value.colorPrimary;
+	if(!props.theme.titleColor) props.theme.titleColor = token.value.colorFillAlter;
+	if(!props.theme.borderColor) props.theme.borderColor = token.value.colorBorderSecondary;
+	if(!props.theme.borderPriColor) props.theme.borderPriColor = token.value.colorBorder;
+	if(!props.theme.activeRowFontColor) props.theme.activeRowFontColor = '#000000e0';
+
 };
 //  #endregion 初始化
 
@@ -1658,7 +1679,7 @@ onMounted(async () => {
 
 .ka-table :deep(.ant-table-title) {
 	padding: 0.4rem;
-	background-color: v-bind(titleColor);
+	background-color: v-bind('props.theme.titleColor');
 }
 
 .ka-table-title {
@@ -1670,7 +1691,8 @@ onMounted(async () => {
 }
 
 .ka-table :deep(.ka-table-selected-row) td {
-	background-color: v-bind(activeRowColor) !important;
+	background-color: v-bind('props.theme.activeRowColor') !important;
+	color: v-bind('props.theme.activeRowFontColor')  !important;
 }
 
 .ka-table :deep(.ant-table-column-sort) {
@@ -1678,16 +1700,17 @@ onMounted(async () => {
 }
 
 .ka-table :deep(.ant-table-summary) {
-	background-color: v-bind(colsColor) !important;
+	background-color: v-bind('props.theme.colsColor') !important;
+	white-space: nowrap;
 }
 
 .ka-table :deep(.ant-table-pagination) {
 	margin: 0;
 	padding: v-bind(tdPadding);
-	border: 1px solid v-bind(borderPriColor);
+	border: 1px solid v-bind('props.theme.borderPriColor');
 	border-top: 0;
 	border-radius: 0 0 v-bind(borderRadius) v-bind(borderRadius);
-	background-color: v-bind(colsColor);
+	background-color: v-bind('props.theme.colsColor');
 }
 
 .ka-table :deep(.ant-table-container) {

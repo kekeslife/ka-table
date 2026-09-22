@@ -8,7 +8,7 @@ export type KaEditorItem = {
 	/** ant inputNumber precision */
 	//precision?: InputNumberProps['precision'];
 	/** 内置组件 */
-	componentType: 'input' | 'textarea' | 'number' | 'date' | 'select' | 'autoComplete';
+	componentType: 'input' | 'textarea' | 'number' | 'date' | 'select' | 'autoComplete' | 'dateRange';
 	/** 其它属性 */
 	attrs?: { [key: string]: any };
 	/** 显示标签名称 */

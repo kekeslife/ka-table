@@ -1,16 +1,16 @@
 <template>
 	<a-collapse v-model:activeKey="openFilterPanel" class="ka-filter-panel">
-		<a-collapse-panel key="1" header="筛选">
+		<a-collapse-panel key="1" header="操作">
 			<a-form layout="inline" :model="formState" :label-col="{ style: { width: '150px' } }">
 				<a-flex wrap="wrap" gap="small">
 					<a-form-item v-for="item in props.columns" :key="item.key" :label="item.title" class="item-flex">
 						<ka-input
-							:component-type="item.componentType"
+							:component-type="formState[item.key].valComponent"
 							v-bind="item.attrs"
-							:style="{ width: item.width }"
 							v-model="formState[item.key].val"
 							:value-converter="item.valueConverter"
 							:debounce-delay="item.debounceDelay"
+							:style="{ width: formState[item.key].valComponent === 'dateRange' ? '220px' : item.width }"
 							@change="
 								(v: any) => {
 									onValChange(item, v);
@@ -25,12 +25,26 @@
 						>
 						</ka-input>
 					</a-form-item>
+					<a-space size="large">
+						<a-button type="primary" @click="onFilter">筛选</a-button>
+						<a-button @click="onReset">清空</a-button>
+					</a-space>
 				</a-flex>
 			</a-form>
 			<a-divider style="margin: 12px 0"></a-divider>
-			<a-space>
-				<a-button type="primary" @click="onFilter">筛选</a-button>
-				<a-button @click="onReset">清空</a-button>
+			<a-space size="large">
+				<a-button v-if="props.toolbar.hasAdd" @click="onAdd">新增</a-button>
+				<a-button v-if="props.toolbar.hasEdit" @click="onEdit" :disabled="props.isDisabled">编辑</a-button>
+				<a-popconfirm  v-if="props.toolbar.hasRemove"
+					:title="props.language?.removeConfirm"
+					:ok-text="props.language?.confirm"
+					:show-cancel="false"
+					:disabled="props.isDisabled"
+					@confirm="onRemove"
+				>
+					<a-button :disabled="props.isDisabled">删除</a-button>
+				</a-popconfirm>
+				<a-button v-if="props.toolbar.hasRefresh" @click="onRefresh">刷新</a-button>
 			</a-space>
 		</a-collapse-panel>
 	</a-collapse>
@@ -41,10 +55,8 @@ import { PropType, onBeforeMount, reactive, ref, watch } from 'vue';
 import * as lodash from 'lodash-es';
 
 import KaInput from '../ka_input/KaInput.vue';
-import { KaTableLang } from '../ka_table';
+import { KaTableLang, KaTablePropsToolbar } from '../ka_table';
 import { KaFilterCol, KaFilterItem } from '../ka_filter/index.ts';
-import { hasValue } from '../ka_table/common.ts';
-import dayjs from 'dayjs';
 
 // const conditions = defineModel<KaFilterCondition[]>({});
 // const filterItems = defineModel<KaFilterItem[]>();
@@ -58,7 +70,12 @@ const props = defineProps({
 		type: Array as PropType<KaFilterCol[]>,
 		required: true,
 	},
+	toolbar:{
+		type:Object as PropType<KaTablePropsToolbar>,
+		required: true,
+	},
 	language: { type: Object as PropType<KaTableLang> },
+	isDisabled: { type: Boolean, default: false },
 });
 
 const value = defineModel<boolean>();
@@ -88,6 +105,18 @@ const onValSearch = async (col: KaFilterCol, key: any) => {
 const onFilter = () => {
 	emit('commit', formState);
 };
+const onAdd = () => {
+	emit('add');
+};
+const onEdit = () => {
+	emit('edit');
+};
+const onRemove = () => {
+	emit('remove');
+};
+const onRefresh = () => {
+	emit('refresh');
+};
 
 const onReset = () => {
 	for (let key in formState) {
@@ -98,11 +127,19 @@ const onReset = () => {
 
 const emit = defineEmits<{
 	commit: [formState: { [key: string]: any }];
+	add: [];
+	edit: [];
+	remove: [];
+	refresh: [];
 	reset: [];
 }>();
 
 const render = () => {
 	for (let col of props.columns) {
+		let componentType = col.componentType;
+		if (componentType === 'textarea') componentType = 'input';
+		else if (componentType === 'date') componentType = 'dateRange';
+
 		formState[col.key] = {
 			key: col.key,
 			opt: 'eq',
@@ -110,7 +147,7 @@ const render = () => {
 			bool: 'and',
 			valOptions: lodash.isArray(col.options) ? col.options : [],
 			optOptions: [],
-			valComponent: col.componentType === 'textarea' ? 'input' : col.componentType,
+			valComponent: componentType,
 		};
 	}
 };

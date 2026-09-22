@@ -15,9 +15,10 @@
 </template>
 
 <script setup lang="ts">
-import { AutoComplete, DatePicker, Form, Input, InputNumber, Select, Textarea } from 'ant-design-vue';
+import { AutoComplete, DatePicker, Form, Input, InputNumber, Select, Textarea,RangePicker } from 'ant-design-vue';
 import { type Component, PropType, markRaw } from 'vue';
 import debounce from 'lodash-es/debounce';
+import { KaEditorItem } from '../ka_editor';
 
 const value = defineModel<any>();
 
@@ -32,7 +33,7 @@ const props = defineProps({
 	valueConverter: { type: Function as PropType<(value: any) => Promise<any>> },
 	/** 内置输入框类型 */
 	componentType: {
-		type: String as PropType<'input' | 'textarea' | 'number' | 'date' | 'select' | 'autoComplete'>,
+		type: String as PropType<KaEditorItem['componentType']>,
 		default: 'input',
 
 		// validator(value, props) {
@@ -61,6 +62,7 @@ const components = {
 	date: markRaw(DatePicker),
 	select: markRaw(Select),
 	autoComplete: markRaw(AutoComplete),
+	dateRange:markRaw(RangePicker),
 };
 
 const onSearchDebounce = debounce((searchKey: string) => {

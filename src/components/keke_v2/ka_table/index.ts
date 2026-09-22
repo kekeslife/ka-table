@@ -1,9 +1,9 @@
 import { SizeType } from 'ant-design-vue/es/config-provider';
 import { Rule } from 'ant-design-vue/es/form/interface';
 import { ColumnType, SortOrder } from 'ant-design-vue/es/table/interface';
-import { PropType  } from 'vue';
+import { PropType } from 'vue';
 import { KaEditorItem, KaEditorItemOption } from '../ka_editor';
-import { SelectProps, TableColumnProps,TableProps } from 'ant-design-vue';
+import { SelectProps, TableColumnProps, TableProps } from 'ant-design-vue';
 import { KaSorterCondition } from '../ka_sorter';
 import { KaFilterCondition } from '../ka_filter';
 import { type Locale } from 'ant-design-vue/es/locale';
@@ -49,7 +49,7 @@ export type KaTableLang = {
 	templateError: string;
 	addSuccess: string;
 	editSuccess: string;
-	removeConfirm:string;
+	removeConfirm: string;
 	removeSuccess: string;
 	importSuccess: string;
 	importNoFileError: string;
@@ -63,19 +63,30 @@ export type KaTableLang = {
 	summaryTotal: string;
 	all: string;
 	curPage: string;
-	and:string;
-	or:string;
-	equal:string;
-	notEqual:string;
-	greaterThan:string;
-	greaterThanOrEqual:string;
-	lessThan:string;
-	lessThanOrEqual:string;
-	beginWith:string;
-	endWith:string;
-	contain:string;
-	empty:string;
-	notEmpty:string;
+	and: string;
+	or: string;
+	equal: string;
+	notEqual: string;
+	greaterThan: string;
+	greaterThanOrEqual: string;
+	lessThan: string;
+	lessThanOrEqual: string;
+	beginWith: string;
+	endWith: string;
+	contain: string;
+	empty: string;
+	notEmpty: string;
+};
+
+/** 样式 */
+export type KaTableTheme = {
+	primaryColor?: string;
+	activeRowColor?: string;
+	activeRowFontColor?: string;
+	colsColor?: string;
+	titleColor?: string;
+	borderColor?: string;
+	borderPriColor?: string;
 };
 
 /** 字段 */
@@ -132,14 +143,14 @@ export type KaTableCol = {
 	filterInfo?: {
 		isFilter: boolean;
 		options?: KaEditorItem['options'];
-		width?:ColumnType<any>['width'];
-		title?:string;
+		width?: ColumnType<any>['width'];
+		title?: string;
 		/** 自定义值转换 */
 		valueConverter?: KaEditorItem['valueConverter'];
 		/** 自定义attr */
 		attrs?: { [propName: string]: any };
 		componentType?: KaEditorItem['componentType'];
-		index?:number;
+		index?: number;
 	};
 	exportInfo?: {
 		index: number | null;
@@ -187,7 +198,7 @@ export type KaTableCol = {
 		/** 小数精度 */
 		precision?: number;
 		/** ant select filterOption */
-		filterOption?: SelectProps['filterOption']; 
+		filterOption?: SelectProps['filterOption'];
 	};
 	// editorInfo?:Omit<KaEditorItem,'showTime'|'_value'|'_key'>
 };
@@ -214,7 +225,7 @@ export type KaTableDataSource = {
 	records: KaTableRowRecord[];
 	activeIndex: number | null;
 	readonly curRecord: KaTableRowRecord | null;
-	summary:{[key: string]: any} | null;
+	summary: { [key: string]: any } | null;
 };
 /** 数据行 */
 export type KaTableRowRecord = { [key: string]: any };
@@ -288,7 +299,7 @@ export type KaTableResponseRecords = KaTableResponse & {
 /** 服务器返回查询 */
 export type KaTableSearchResponse = KaTableResponseRecords & {
 	total: number;
-	summary?:{[key:string]:any};
+	summary?: { [key: string]: any };
 };
 /** 服务器返回导入 */
 export type KaTableImportFileResponse = KaTableResponse & {
@@ -324,7 +335,7 @@ export const kaTableProps = () => ({
 	/** 表格标题 */
 	tableTitle: { type: String },
 	/** 主题颜色 */
-	theme: { type: String },
+	theme: { type: Object as PropType<KaTableTheme>, default:() => ({}) },
 	/** API地址 */
 	url: { type: String, required: true, default: '' },
 	/** 每页显示条数，默认10条，设置0为不分页 */
@@ -342,7 +353,7 @@ export const kaTableProps = () => ({
 	/** 抽屉窗口宽度 */
 	drawWidth: { type: [Number, String], default: 720 },
 	/** 抽屉类名 */
-	drawClass: {type:String,default:''},
+	drawClass: { type: String, default: '' },
 	/** 抽屉提交按钮文字 */
 	drawSubmitTitle: { type: String, default: '' },
 	/** 抽屉清空按钮文字 */
@@ -362,7 +373,7 @@ export const kaTableProps = () => ({
 	/** 导出文件名 */
 	exportFileName: { type: Function as PropType<() => string> },
 	/** 日期格式 */
-	dateFormat:{ type: String, default: 'YYYY/MM/DD' },
+	dateFormat: { type: String, default: 'YYYY/MM/DD' },
 
 	initFilterConditions: { type: Array as PropType<KaFilterCondition[]>, default: [] },
 	frozenFilterConditions: { type: Array as PropType<KaFilterCondition[]>, default: [] },
@@ -374,8 +385,8 @@ export const kaTableProps = () => ({
 		default: {},
 	},
 	/** 内置语言 */
-	defaultLang:{
-		type:String as PropType<'cn' | 'en'>,
+	defaultLang: {
+		type: String as PropType<'cn' | 'en'>,
 		default: 'cn',
 	},
 	/** 内置工具栏启用 */
@@ -393,7 +404,7 @@ export const kaTableProps = () => ({
 		}),
 	},
 	/** 查询面板 */
-	filterPanel:{
+	filterPanel: {
 		type: Object as PropType<KaTablePropsFilterPanel>,
 		default: null,
 	},
@@ -554,7 +565,7 @@ export const kaTableProps = () => ({
 		type: Function as PropType<KaTableEventHandle>,
 	},
 	/** 筛选面板提交筛选之前 */
-	onBeforeCommitFilterPanel:{
+	onBeforeCommitFilterPanel: {
 		type: Function as PropType<KaTableEventHandle>,
-	}
+	},
 });
