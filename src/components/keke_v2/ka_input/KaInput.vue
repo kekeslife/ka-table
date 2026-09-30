@@ -16,7 +16,7 @@
 
 <script setup lang="ts">
 import { AutoComplete, DatePicker, Form, Input, InputNumber, Select, Textarea,RangePicker } from 'ant-design-vue';
-import { type Component, PropType, markRaw } from 'vue';
+import { type Component, PropType, markRaw, onBeforeUnmount } from 'vue';
 import debounce from 'lodash-es/debounce';
 import { KaEditorItem } from '../ka_editor';
 
@@ -102,6 +102,11 @@ const onChange = async (v: any, option?: any) => {
 const onSearch = (searchKey: string) => {
 	onSearchDebounce(searchKey);
 };
+
+onBeforeUnmount(() => { 
+	onSearchDebounce.cancel();
+	onChangeDebounce.cancel();
+});
 </script>
 
 <style scoped></style>
