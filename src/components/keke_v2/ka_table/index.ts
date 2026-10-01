@@ -330,6 +330,7 @@ export const kaTableProps = () => ({
 	size: { type: String as PropType<SizeType>, default: 'small' },
 	/** ant table scroll */
 	scroll: { type: Object as PropType<TableProps['scroll']> },
+	tableLayout: { type: String as PropType<TableProps['tableLayout']> },
 	/** 字段配置 */
 	columns: { type: Object as PropType<KaTableCols>, required: true },
 	/** 表格标题 */

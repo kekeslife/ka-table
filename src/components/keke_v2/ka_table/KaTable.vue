@@ -38,6 +38,7 @@
 			:showSorterTooltip="false"
 			:columns="antCols"
 			:scroll="props.scroll"
+			:table-layout="props.tableLayout"
 		>
 			<template v-for="(_v, k) in slots" v-slot:[k] :key="k">
 				<slot :name="k"></slot>
@@ -1715,6 +1716,11 @@ onMounted(async () => {
 
 .ka-table :deep(.ant-table-container) {
 	overflow: auto;
+	border-inline-end: 1px solid v-bind('props.theme.borderPriColor');
+}
+
+.ka-table :deep(.ant-table-cell:last-child){
+	border-inline-end:none !important;
 }
 
 .ka-filter-panel {
