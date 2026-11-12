@@ -5,6 +5,7 @@ import { KaEditorItem } from '../ka_editor';
 import { KaFilterCol } from '../ka_filter';
 import { KaSorterCondition } from '../ka_sorter';
 import { langCN, langEN } from '../lang';
+import dayjs from 'dayjs';
 
 // #region init
 
@@ -63,26 +64,26 @@ export const initPorps = (props: InstanceType<typeof KaTable>['$props']) => {
 	}
 
 	for (const colName in props.columns) {
-		initCols(props.columns[colName], [colName],props);
+		initCols(props.columns[colName], [colName], props);
 	}
 };
 
 /** 初始化col */
-const initCols = (colObj: KaTableCol | KaTableCols, path: string[],props: InstanceType<typeof KaTable>['$props']) => {
+const initCols = (colObj: KaTableCol | KaTableCols, path: string[], props: InstanceType<typeof KaTable>['$props']) => {
 	// if (Object.hasOwn(colObj, 'title')) {
 	if (colObj.hasOwnProperty('title')) {
 		if (lodash.isString(colObj.title)) {
-			initCol(colObj as KaTableCol, [...path],props);
+			initCol(colObj as KaTableCol, [...path], props);
 			return;
 		}
 	}
 	if (lodash.isString(colObj)) throw new Error(`column配置错误:(${colObj})`);
 	for (const key in colObj) {
 		const subObj = (colObj as { [key: string]: KaTableCol })[key];
-		initCols(subObj, [...path, key],props);
+		initCols(subObj, [...path, key], props);
 	}
 };
-const initCol = (col: KaTableCol, path: string[],props: InstanceType<typeof KaTable>['$props']) => {
+const initCol = (col: KaTableCol, path: string[], props: InstanceType<typeof KaTable>['$props']) => {
 	const key = path.join('.');
 	col.key = key;
 	col._katableIsCol = true;
@@ -293,10 +294,10 @@ export const createFilterCols = (columns: KaTableCols, editorObj: { [key: string
 					valueConverter: tableCol.filterInfo.valueConverter,
 					debounceDelay: editor?.debounceDelay,
 					width: tableCol.filterInfo.width?.toString(),
-					index:tableCol.filterInfo.index || tableCol.listInfo?.index
+					index: tableCol.filterInfo.index || tableCol.listInfo?.index,
 				};
 				filterCol.attrs = {};
-				if(!tableCol.filterInfo.componentType){
+				if (!tableCol.filterInfo.componentType) {
 					if (!editor) {
 						switch (tableCol.dbInfo?.dataType) {
 							case 'date':
@@ -310,7 +311,7 @@ export const createFilterCols = (columns: KaTableCols, editorObj: { [key: string
 					} else {
 						filterCol.componentType = editor.componentType;
 					}
-				}else{
+				} else {
 					filterCol.componentType = tableCol.filterInfo.componentType;
 				}
 				// 日期组件
@@ -354,7 +355,7 @@ export const createFilterCols = (columns: KaTableCols, editorObj: { [key: string
 		itemHandle(columns[colName]);
 	}
 
-	return result.sort((a,b)=>a.index!-b.index!);
+	return result.sort((a, b) => a.index! - b.index!);
 };
 /** 初始化汇出exportInfos */
 export const createExportCols = (columns: KaTableCols) => {
@@ -396,12 +397,17 @@ export const createImportCols = (columns: KaTableCols) => {
 		if (col._katableIsCol) {
 			const _c = col as KaTableCol;
 			if (_c.importInfo?.index != null) {
+				// console.log(_c);
 				result.push({
 					key: _c.key as string,
-					dataIndex: _c.key as string,
+					dataIndex: _c.key!.split('.') as string[],
 					title: getFirstNotNull([_c.importInfo.title, _c.title, _c.key]),
 					index: _c.importInfo.index,
 					width: _c.listInfo?.width,
+					customRender: ({ value, text }) => {
+						if (_c.dbInfo?.dataType === 'date') return dayjs(value).format(_c.dbInfo?.dateFormat || 'YYYY-MM-DD');
+						return text;
+					},
 				});
 			}
 		} else {

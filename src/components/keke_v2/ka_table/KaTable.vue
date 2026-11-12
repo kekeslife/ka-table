@@ -25,6 +25,9 @@
 			:toolbar="props.toolbar"
 			:isDisabled="dataSource.activeIndex == null" ,
 		>
+		<template #expendBtns>
+			<slot name="filterPanelExpendBtns"></slot>
+		</template>
 		</ka-filter-panel>
 		<a-table
 			class="ka-table"
@@ -221,7 +224,7 @@
 				</a-table>
 			</a-spin>
 		</a-drawer>
-		<a v-if="props.toolbar.hasExport" ref="$export" style="display: none"></a>
+		<a v-if="props.toolbar.hasExport || props.toolbar.hasImport" ref="$export" style="display: none"></a>
 	</a-config-provider>
 </template>
 
@@ -1451,7 +1454,7 @@ const downloadTemplate = async () => {
 		type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 	});
 	$export.value.href = URL.createObjectURL(file);
-	$export.value.download = 'template.xlsx';
+	$export.value.download = props.tableTitle + '导入模板.xlsx';
 	//$export.setAttribute('download', `考勤-${dayjs().format('MMDDHHmmss')}.xlsx`);
 	$export.value.click();
 };
@@ -1691,7 +1694,7 @@ onMounted(async () => {
 	margin: 0;
 }
 
-.ka-table :deep(.ka-table-selected-row) td {
+.ka-table :deep(.ka-table-selected-row) td,.ka-table :deep(.ka-table-selected-row) td button {
 	background-color: v-bind('props.theme.activeRowColor') !important;
 	color: v-bind('props.theme.activeRowFontColor')  !important;
 }

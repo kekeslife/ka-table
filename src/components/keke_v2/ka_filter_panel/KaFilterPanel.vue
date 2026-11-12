@@ -45,6 +45,7 @@
 					<a-button :disabled="props.isDisabled">删除</a-button>
 				</a-popconfirm>
 				<a-button v-if="props.toolbar.hasRefresh" @click="onRefresh">刷新</a-button>
+				<slot name="expendBtns"></slot>
 			</a-space>
 		</a-collapse-panel>
 	</a-collapse>

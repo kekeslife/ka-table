@@ -127,8 +127,12 @@ const optOptions = [
 const onChangeCol = (item: KaFilterItem, _value: any) => {
 	// console.log('onChangeCol');
 	item.col = props.columns.find(col => col.key === item.key);
-	item.opt = undefined;
 	item.optOptions = getOptOptions(item);
+	if(item.optOptions.some(l=>l.value==='like')){
+		item.opt = 'like'
+	}else{
+		item.opt = undefined;
+	}
 	item.val = '';
 	item.valOptions = undefined;
 	item.valComponent = undefined;
