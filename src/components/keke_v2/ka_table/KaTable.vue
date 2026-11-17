@@ -1698,6 +1698,9 @@ onMounted(async () => {
 	background-color: v-bind('props.theme.activeRowColor') !important;
 	color: v-bind('props.theme.activeRowFontColor')  !important;
 }
+.ka-table :deep(.ka-table-selected-row td .ant-btn-link) span{
+	text-decoration: underline solid  !important;
+}
 
 .ka-table :deep(.ant-table-column-sort) {
 	background-color: #fff;
