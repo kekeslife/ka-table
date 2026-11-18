@@ -253,7 +253,7 @@ import {
 	KaTableImportFileResponse,
 	KaTableResponseRecord,
 } from '.';
-import { Ref, computed, getCurrentInstance, inject, onBeforeMount, onMounted, reactive, ref, watch } from 'vue';
+import { Ref, computed, getCurrentInstance, onBeforeMount, onMounted, reactive, ref, watch } from 'vue';
 import { PaginationConfig } from 'ant-design-vue/es/pagination';
 import { ColumnType, FilterValue, SorterResult } from 'ant-design-vue/es/table/interface';
 import { KaFilterCol, KaFilterCondition, KaFilterItem } from '../ka_filter';
@@ -1044,6 +1044,7 @@ const clearAntFilters = () => {
 };
 /** 设置筛选值 */
 const setFilters = (conditions: KaFilterCondition[], isFromAnt: boolean = true) => {
+	pagination.current = 1;
 	!isFromAnt && clearAntFilters();
 	$filter.value?.setConditions(conditions);
 	isFiltered.value = !!conditions.length;
